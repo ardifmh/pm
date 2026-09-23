@@ -1,0 +1,990 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SPPG MBG - Data Penerima Manfaat</title>
+<style>
+:root{--primary:#1769aa;--primary2:#0d47a1;--bg:#f4f7fb;--card:#fff;--text:#1f2937;--muted:#6b7280;--border:#e5e7eb;--danger:#dc2626;--success:#16a34a;--warning:#d97706}
+*{box-sizing:border-box}body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--text)}
+button,input,select{font:inherit}.app{display:flex;min-height:100vh}
+.sidebar{width:255px;background:linear-gradient(180deg,var(--primary2),#092d68);color:#fff;padding:20px 14px;position:fixed;inset:0 auto 0 0;z-index:10}
+.brand{display:flex;gap:12px;align-items:center;padding:8px 10px 24px;border-bottom:1px solid #ffffff26}.logo{width:42px;height:42px;border-radius:12px;background:#fff;color:var(--primary2);display:grid;place-items:center;font-weight:800}.brand b{display:block}.brand small{opacity:.75}
+.nav{margin-top:20px}.nav button{width:100%;border:0;background:transparent;color:#dbeafe;text-align:left;padding:12px 13px;border-radius:10px;margin:3px 0;cursor:pointer}.nav button:hover,.nav button.active{background:#ffffff18;color:#fff}.nav .group{font-size:11px;text-transform:uppercase;opacity:.55;padding:15px 13px 5px}
+.main{margin-left:255px;width:calc(100% - 255px);padding:24px}
+.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px}.top h1{margin:0;font-size:25px}.top p{margin:5px 0 0;color:var(--muted)}
+.btn{border:0;border-radius:9px;padding:10px 15px;cursor:pointer;font-weight:600}.btn:disabled{cursor:wait;opacity:.65}.btn-primary{background:var(--primary);color:#fff}.btn-danger{background:#fee2e2;color:#991b1b}.btn-secondary{background:#eef2f7;color:#374151}.btn-success{background:#dcfce7;color:#166534}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}.card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px;box-shadow:0 4px 16px #0f172a08}.stat{display:flex;justify-content:space-between;align-items:center}.stat .num{font-size:29px;font-weight:800;margin-top:5px}.stat .ico{width:45px;height:45px;border-radius:12px;background:#eaf4ff;color:var(--primary);display:grid;place-items:center;font-weight:800}.muted{color:var(--muted);font-size:13px}
+.section{margin-top:20px}.section-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}.section-head h2{font-size:18px;margin:0}
+.table-card{padding:0;overflow:hidden}.toolbar{padding:14px;display:flex;gap:9px;flex-wrap:wrap;border-bottom:1px solid var(--border)}.toolbar input,.toolbar select,.form input,.form select,.form textarea{border:1px solid #d6dbe3;border-radius:8px;padding:10px;background:#fff;outline:none}.toolbar input:focus,.form input:focus,.form select:focus{border-color:var(--primary)}table{width:100%;border-collapse:collapse}th,td{padding:11px 13px;border-bottom:1px solid var(--border);text-align:left;font-size:13px}th{background:#f8fafc;color:#475569;font-size:12px}tbody tr:hover{background:#f8fbff}.actions{display:flex;gap:5px}.actions button{padding:6px 9px;border:0;border-radius:7px;cursor:pointer}.empty{text-align:center;padding:35px;color:var(--muted)}
+.badge{display:inline-block;padding:4px 8px;border-radius:999px;font-size:11px;font-weight:700}.badge-active{background:#dcfce7;color:#166534}.badge-off{background:#fee2e2;color:#991b1b}
+.page{display:none}.page.active{display:block}
+.modal{display:none;position:fixed;inset:0;background:#0f172a80;z-index:30;align-items:center;justify-content:center;padding:20px}.modal.show{display:flex}.modal-box{background:#fff;border-radius:16px;width:min(680px,100%);max-height:90vh;overflow:auto}.modal-head{padding:18px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between}.modal-head h3{margin:0}.modal-body{padding:20px;min-height:120px}.form{display:grid;grid-template-columns:1fr 1fr;gap:13px}.field{display:flex;flex-direction:column;gap:6px}.field.full{grid-column:1/-1}.field label{font-size:12px;font-weight:700;color:#475569}.modal-foot{padding:15px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px}
+.toast{position:fixed;right:22px;bottom:22px;background:#111827;color:#fff;padding:12px 16px;border-radius:10px;display:none;z-index:50}.toast.show{display:block}
+.info{background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af;border-radius:10px;padding:12px;font-size:13px}
+@media(max-width:1000px){.grid{grid-template-columns:repeat(2,1fr)}.sidebar{width:210px}.main{margin-left:210px;width:calc(100% - 210px)}}@media(max-width:700px){.sidebar{position:relative;width:100%;height:auto}.main{margin:0;width:100%;padding:14px}.app{display:block}.grid{grid-template-columns:1fr}.form{grid-template-columns:1fr}.field.full{grid-column:auto}.top{align-items:flex-start;gap:10px;flex-direction:column}table{min-width:850px}.table-card{overflow:auto}.nav{display:flex;overflow:auto}.nav .group{display:none}}
+
+.login-screen{position:fixed;inset:0;background:linear-gradient(135deg,#092d68,#1769aa);display:flex;align-items:center;justify-content:center;z-index:100;padding:20px}.login-box{width:min(420px,100%);background:#fff;border-radius:18px;padding:28px;box-shadow:0 20px 60px #0004}.login-box h2{margin:0 0 8px}.login-box p{color:#6b7280;font-size:13px;line-height:1.5}.login-box input{width:100%;padding:12px;border:1px solid #d6dbe3;border-radius:9px;margin:7px 0 12px}.login-box button{width:100%;margin-top:5px}.login-error{color:#b91c1c;background:#fee2e2;border-radius:8px;padding:9px;font-size:12px;display:none;margin-bottom:10px}.userbar{display:flex;align-items:center;gap:8px}.user-email{font-size:12px;color:#64748b}.btn-logout{background:#fee2e2;color:#991b1b;border:0;border-radius:8px;padding:8px 11px;cursor:pointer}
+
+<style>
+.badge{display:inline-flex;align-items:center;justify-content:center;min-width:58px;padding:5px 10px;border-radius:999px;font-size:12px;font-weight:700;line-height:1}
+.badge-active{background:#dcfce7;color:#15803d}
+.badge-off{background:#fee2e2;color:#dc2626}
+.actions{display:flex;gap:5px;align-items:center}
+.actions button{padding:6px 10px;border-radius:8px}
+<style>
+.pagination-wrap{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 4px;flex-wrap:wrap}
+.pagination-info{font-size:13px;color:#64748b}
+.pagination-buttons{display:flex;gap:5px}
+.page-btn{border:1px solid #dbe3ee;background:#fff;border-radius:8px;min-width:34px;height:34px;padding:0 9px;cursor:pointer}
+.page-btn.active{background:#1455a0;color:#fff;border-color:#1455a0;font-weight:700}
+.page-btn:disabled{opacity:.45;cursor:not-allowed}
+</style></style>
+</style>
+<script src="https://www.gstatic.com/firebasejs/12.19.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.19.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+<style id="dashboard-stat-uniform">
+.stat-card .stat-value,
+#statSchools,#statStudents,#statTeachers,#statStaff,
+#statPosyandu,#statPM,#statPMPosyandu,#statPMTotal{
+  font-size:32px !important;
+  line-height:1.15 !important;
+  font-weight:800 !important;
+  margin-top:6px !important;
+  display:block !important;
+}
+.stat-card{min-height:98px;}
+</style>
+
+</head>
+<body>
+<div id="loginScreen" class="login-screen">
+ <div class="login-box">
+  <div class="logo" style="margin-bottom:16px">MBG</div>
+  <h2>Login SPPG MBG</h2>
+  <p>Masuk untuk mengakses database penerima manfaat SPPG yang tersimpan di Firebase.</p>
+  <div id="loginError" class="login-error"></div>
+  <label style="font-size:12px;font-weight:700">Email</label>
+  <input id="loginEmail" type="email" placeholder="email@contoh.com" autocomplete="username">
+  <label style="font-size:12px;font-weight:700">Password</label>
+  <input id="loginPassword" type="password" placeholder="Password" autocomplete="current-password">
+  <button class="btn btn-primary" onclick="loginFirebase()">Masuk</button>
+  <p style="margin-top:14px;font-size:11px">Akun pengguna dibuat melalui Firebase Authentication. Jangan membagikan password.</p>
+ </div>
+</div>
+<div class="app" id="appRoot" style="display:none">
+<aside class="sidebar">
+  <div class="brand"><div class="logo">MBG</div><div><b>SPPG MBG</b><small>Data Penerima Manfaat</small></div></div>
+  <div class="userbar" style="margin:14px 8px 0"><span class="user-email" id="userEmail" style="color:#dbeafe"></span><button class="btn-logout" onclick="logoutFirebase()">Keluar</button></div><div class="nav">
+    <div class="group">Utama</div>
+    <button class="active" onclick="showPage('dashboard',this)">🏠 Dashboard</button>
+    <div class="group">Master Data</div>
+    <button onclick="showPage('schools',this)">🏫 Sekolah</button>
+    <button onclick="showPage('students',this)">👨‍🎓 Siswa</button>
+    <button onclick="showPage('teachers',this)">👨‍🏫 Guru</button>
+    <button onclick="showPage('staff',this)">🧑‍💼 Tenaga Kependidikan</button>
+    <button onclick="showPage('posyandu',this)">👶 B3 / Posyandu</button>
+    <div class="group">Sistem</div>
+    <button onclick="backup()">⬇️ Backup Data</button>
+    <button onclick="restoreInput.click()">⬆️ Restore Data</button>
+    <input id="restoreInput" type="file" accept=".json" hidden onchange="restoreData(event)">
+  <div style="font-size:10px;color:#bfdbfe;margin:18px 8px">☁️ Data tersimpan di Firebase</div>
+</div>
+</aside>
+
+<main class="main">
+<section id="dashboard" class="page active">
+  <div class="top"><div><h1>Dashboard</h1><p>Ringkasan data penerima manfaat SPPG.</p></div><button class="btn btn-primary" onclick="openModal('school')">+ Tambah Sekolah</button></div>
+  <div class="grid">
+    <div class="card stat"><div><div class="muted">Sekolah</div><div class="num" id="statSchools">0</div></div><div class="ico">🏫</div></div>
+    <div class="card stat"><div><div class="muted">Siswa Aktif</div><div class="num" id="statStudents">0</div></div><div class="ico">👨‍🎓</div></div>
+    <div class="card stat"><div><div class="muted">Guru Aktif</div><div class="num" id="statTeachers">0</div></div><div class="ico">👨‍🏫</div></div>
+    <div class="card stat"><div><div class="muted">Tendik Aktif</div><div class="num" id="statStaff">0</div></div><div class="ico">🧑‍💼</div></div>
+  </div>
+  <div class="grid section">
+    <div class="card stat"><div><div class="muted">B3 / Posyandu</div><div class="num" id="statPosyandu">0</div></div><div class="ico">👶</div></div>
+    <div class="card stat"><div><div class="muted">Total PM Sekolah</div><div class="num" id="statPM">0</div></div><div class="ico">🍱</div></div>
+    
+ <div class="card stat-card">
+  <div><div class="stat-label">PM Posyandu</div><div class="stat-value" id="statPMPosyandu">0</div></div>
+ </div>
+ <div class="card stat-card">
+  <div><div class="stat-label">Total PM Keseluruhan</div><div class="stat-value" id="statPMTotal">0</div></div>
+ </div>
+<div class="card" style="grid-column:span 2"><b>Struktur Data</b><p class="muted">Sekolah menjadi induk siswa, guru, dan tenaga kependidikan. B3/Posyandu dikelola sebagai kelompok penerima manfaat tersendiri.</p></div>
+  </div>
+  <div class="section card">
+    <div class="section-head"><h2>Ringkasan Sekolah</h2><button class="btn btn-secondary" onclick="showPage('schools',document.querySelector('.nav button:nth-of-type(3)'))">Kelola Sekolah</button></div>
+    <div id="dashboardSchools"></div>
+  </div>
+</section>
+
+<section id="schools" class="page">
+ <div class="top"><div><h1>Master Sekolah</h1><p>Kelola data satuan pendidikan penerima MBG.</p></div><button class="btn btn-primary" onclick="openModal('school')">+ Tambah Sekolah</button></div>
+ <div class="card table-card"><div class="toolbar"><input id="schoolSearch" placeholder="Cari nama, NPSN, atau alamat..." oninput="renderSchools()"><select id="schoolStatus" onchange="renderSchools()"><option value="">Semua status</option><option>Aktif</option><option>Tidak Aktif</option></select></div><div id="schoolTable"></div></div>
+</section>
+
+<section id="students" class="page">
+ <div class="top"><div><h1>Data Penerima Manfaat</h1><p>Data penerima manfaat sekolah untuk kebutuhan MBG.</p></div><button class="btn btn-primary" onclick="openModal('student')">+ Tambah Siswa</button></div>
+ <div class="card table-card">
+  <div class="toolbar">
+    <input id="studentSearch" placeholder="Cari NIS/NIK atau nama..." oninput="renderStudents()">
+    <select id="studentSchool" onchange="renderStudents()"><option value="">Semua sekolah</option></select>
+    <select id="studentStatus" onchange="renderStudents()"><option value="">Semua status</option><option>Aktif</option><option>Tidak Aktif</option></select>
+    <button class="btn btn-success" onclick="downloadAllPMTemplate()">⬇️ Template Semua PM</button>
+    <button class="btn btn-primary" onclick="document.getElementById('studentExcel').click()">📥 Import Semua PM</button>
+    <input id="studentExcel" type="file" accept=".xlsx,.xls,.csv" hidden onchange="importAllPMExcel(event)">
+  </div>
+  <div id="studentTable"></div>
+</div>
+</section>
+
+<section id="teachers" class="page">
+ <div class="top"><div><h1>Data Guru</h1><p>Data guru yang terkait dengan penerima manfaat MBG.</p></div><button class="btn btn-primary" onclick="openModal('teacher')">+ Tambah Guru</button></div>
+ <div class="card table-card"><div class="toolbar"><input id="teacherSearch" placeholder="Cari nama/NIP..." oninput="renderTeachers()"><select id="teacherSchool" onchange="renderTeachers()"><option value="">Semua sekolah</option></select><button class="btn btn-success" onclick="downloadAllPMTemplate()">⬇️ Template Semua PM</button><button class="btn btn-primary" onclick="document.getElementById('teacherStaffExcel').click()">📥 Import Semua PM</button><input id="teacherStaffExcel" type="file" accept=".xlsx,.xls,.csv" hidden onchange="importAllPMExcel(event)"></div><div id="teacherTable"></div></div>
+</section>
+
+<section id="staff" class="page">
+ <div class="top"><div><h1>Tenaga Kependidikan</h1><p>Data tenaga kependidikan pada setiap sekolah.</p></div><button class="btn btn-primary" onclick="openModal('staff')">+ Tambah Tendik</button></div>
+ <div class="card table-card"><div class="toolbar"><input id="staffSearch" placeholder="Cari nama/jabatan..." oninput="renderStaff()"><select id="staffSchool" onchange="renderStaff()"><option value="">Semua sekolah</option></select><button class="btn btn-success" onclick="downloadAllPMTemplate()">⬇️ Template Semua PM</button><button class="btn btn-primary" onclick="document.getElementById('teacherStaffExcel').click()">📥 Import Semua PM</button></div><div id="staffTable"></div></div>
+</section>
+
+<section id="posyandu" class="page">
+ <div class="top">
+  <div><h1>Penerima B3 / Posyandu</h1><p>Input penerima Posyandu menggunakan format yang sama seperti Siswa.</p></div>
+  <div class="actions">
+   <button class="btn btn-secondary" onclick="openModal('posyandu')">+ Master Posyandu</button>
+   <button class="btn btn-primary" onclick="openModal('posRecipient')">+ Tambah Penerima</button>
+  </div>
+ </div>
+ <div class="card table-card">
+  <div class="toolbar">
+   <input id="posSearch" placeholder="Cari NIS/NIK atau nama..." oninput="resetPosyanduRecipientPage();renderPosyanduRecipients()">
+   <select id="posRecipientType" onchange="resetPosyanduRecipientPage();renderPosyanduRecipients()">
+    <option value="">Semua penerima</option><option value="Balita">Balita</option><option value="Bumil">Bumil</option><option value="Busui">Busui</option>
+   </select>
+   <select id="posRecipientPosyandu" onchange="resetPosyanduRecipientPage();renderPosyanduRecipients()">
+    <option value="">Semua Posyandu</option>
+   </select>
+   <select id="posStatus" onchange="resetPosyanduRecipientPage();renderPosyanduRecipients()">
+    <option value="">Semua status</option><option>Aktif</option><option>Tidak Aktif</option>
+   </select>
+   <select id="posRecipientPageSize" onchange="resetPosyanduRecipientPage();renderPosyanduRecipients()">
+    <option value="10">10 baris</option><option value="20">20 baris</option><option value="30">30 baris</option>
+   </select>
+   <button class="btn btn-success" onclick="downloadPosyanduTemplate()">⬇️ Template Excel</button>
+   <button class="btn btn-primary" onclick="document.getElementById('posExcel').click()">📥 Import Excel</button>
+   <input id="posExcel" type="file" accept=".xlsx,.xls,.csv" hidden onchange="importPosyanduExcel(event)">
+  </div>
+  <div id="posTable"></div>
+  <div id="posRecipientPagination" class="pagination-wrap"></div>
+ </div>
+ <div class="card table-card" style="margin-top:16px">
+  <div class="toolbar">
+   <strong style="font-size:16px">Master Posyandu</strong>
+   <input id="posMasterSearch" placeholder="Cari kode/nama/lokasi..." oninput="renderPosyandu()">
+  </div>
+  <div id="posMasterTable"></div>
+ </div>
+</section>
+</main>
+</div>
+
+<div class="modal" id="modal">
+ <div class="modal-box">
+  <div class="modal-head"><h3 id="modalTitle">Tambah Data</h3><button class="btn btn-secondary" onclick="closeModal()">✕</button></div>
+  <div class="modal-body"><form id="dataForm" class="form" onsubmit="saveForm(event)" novalidate></form></div>
+  <div class="modal-foot"><button class="btn btn-secondary" onclick="closeModal()">Batal</button><button id="saveBtn" class="btn btn-primary" type="submit" form="dataForm">Simpan</button></div>
+ </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const stores=['schools','beneficiaries','teachers','staff','posyandu'];
+let db, currentType=null, currentId=null, currentUser=null;
+const firebaseConfig={apiKey:'AIzaSyCPtUtlTKwVfSH-OD1cBG5CeQrnnYqDpzw',authDomain:'pmsppg.firebaseapp.com',projectId:'pmsppg',storageBucket:'pmsppg.firebasestorage.app',messagingSenderId:'755289762897',appId:'1:755289762897:web:d7afb596814986fd29dc70'};
+const firebaseApp=firebase.initializeApp(firebaseConfig);
+db=firebase.firestore();
+const auth=firebase.auth();
+function uid(prefix){return prefix+'-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,8).toUpperCase()}
+async function all(store){const snap=await db.collection(store).get();return snap.docs.map(d=>({id:d.id,...d.data()}))}
+async function put(store,obj){const clean={...obj};delete clean.id;await db.collection(store).doc(obj.id).set(clean,{merge:true})}
+async function del(store,id){await db.collection(store).doc(id).delete()}
+function loginFirebase(){const email=document.getElementById('loginEmail').value.trim(),pass=document.getElementById('loginPassword').value;const er=document.getElementById('loginError');er.style.display='none';auth.signInWithEmailAndPassword(email,pass).catch(e=>{er.textContent='Login gagal: '+e.message;er.style.display='block'})}
+function logoutFirebase(){auth.signOut()}
+auth.onAuthStateChanged(async user=>{currentUser=user;const screen=document.getElementById('loginScreen'),root=document.getElementById('appRoot');if(user){screen.style.display='none';root.style.display='flex';document.getElementById('userEmail').textContent=user.email||'';try{await refresh()}catch(e){alert('Gagal membaca Firebase: '+e.message)}}else{screen.style.display='flex';root.style.display='none'}});
+function esc(v=''){return String(v).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
+function schoolName(id,schools){return schools.find(x=>x.id===id)?.name||'-'}
+function excelSerialToISO(v){
+  const n=Number(v);
+  if(!Number.isFinite(n)||n<1||n>60000)return '';
+  if(typeof XLSX!=='undefined'&&XLSX.SSF?.parse_date_code){
+    const d=XLSX.SSF.parse_date_code(n);
+    if(d&&d.y&&d.m&&d.d)return `${d.y}-${String(d.m).padStart(2,'0')}-${String(d.d).padStart(2,'0')}`;
+  }
+  const base=new Date(Date.UTC(1899,11,30));
+  const d=new Date(base.getTime()+Math.round(n)*86400000);
+  if(Number.isNaN(d.getTime()))return '';
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}`;
+}
+function normalizeISODate(v){
+  if(v===null||v===undefined||v==='')return '';
+  if(typeof v==='number')return excelSerialToISO(v);
+  const z=String(v).trim();
+  if(/^\d+(\.\d+)?$/.test(z)){
+    const iso=excelSerialToISO(z);
+    if(iso)return iso;
+  }
+  let m=z.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/);
+  if(m)return `${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`;
+  m=z.match(/^(\d{4})[\/-](\d{1,2})[\/-](\d{1,2})$/);
+  if(m)return `${m[1]}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}`;
+  return z;
+}
+function formatDateDisplay(v){
+  const iso=normalizeISODate(v);
+  const m=iso.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  return m?`${m[3]}-${m[2]}-${m[1]}`:String(v??'-');
+}
+function showPage(id,btn){
+ const page=document.getElementById(id);
+ if(!page){
+   console.error('Halaman tidak ditemukan:',id);
+   toast('Halaman tidak ditemukan: '+id);
+   return;
+ }
+ document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
+ page.classList.add('active');
+ document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('active'));
+ if(btn)btn.classList.add('active');
+ refresh()
+}
+function toast(msg){let t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200)}
+function fields(type,data={}){
+ const schoolsList=window._schools||[];
+ const posyanduList=window._posyandu||[];
+ const optPosyandu='<option value="">Pilih Posyandu</option>'+posyanduList.map(p=>`<option value="${p.id}" ${data.posyanduId===p.id?'selected':''}>${esc(p.name)}${p.code?' ('+esc(p.code)+')':''}</option>`).join('');
+ const optSchools='<option value="">Pilih sekolah</option>'+schoolsList.map(s=>`<option value="${s.id}" ${data.schoolId===s.id?'selected':''}>${esc(s.name)}</option>`).join('');
+ if(type==='school')return `
+  <div class="field"><label>Kode Sekolah</label><input name="code" value="${esc(data.code||'')}" placeholder="SCH-0001" required></div>
+  <div class="field"><label>NPSN</label><input name="npsn" value="${esc(data.npsn||'')}"></div>
+  <div class="field full"><label>Nama Sekolah</label><input name="name" value="${esc(data.name||'')}" required></div>
+  <div class="field"><label>Jenjang</label><select name="level"><option>PAUD</option><option>TK</option><option>SD</option><option>SMP</option><option>SMA</option><option>SMK</option><option>SLB</option><option>Lainnya</option></select></div>
+  <div class="field"><label>Status</label><select name="status"><option>Aktif</option><option>Tidak Aktif</option></select></div>
+  <div class="field full"><label>Alamat</label><textarea name="address" rows="2">${esc(data.address||'')}</textarea></div>
+  <div class="field"><label>Kepala Sekolah</label><input name="head" value="${esc(data.head||'')}"></div>
+  <div class="field"><label>No. Kontak</label><input name="phone" value="${esc(data.phone||'')}"></div>`;
+ if(type==='student')return `
+  <div class="field"><label>NIS / NIK</label><input name="identityNumber" value="${esc(data.identityNumber||data.nisn||data.nis||'')}" required placeholder="NIS atau NIK"></div>
+  <div class="field"><label>Sekolah</label><select name="schoolId" required>${optSchools}</select></div>
+  <div class="field full"><label>Nama Lengkap</label><input name="name" value="${esc(data.name||'')}" required></div>
+  <div class="field"><label>Tanggal Lahir</label><input name="birthDate" type="date" value="${esc(data.birthDate||'')}"></div>
+  <div class="field"><label>Jenis Kelamin</label><select name="genderCode"><option value="392" ${String(data.genderCode||data.gender)==='392'?'selected':''}>Laki-laki</option><option value="64" ${String(data.genderCode||data.gender)==='64'?'selected':''}>Perempuan</option></select></div>
+  <div class="field full"><label>Nama Orang Tua / Wali</label><input name="parentName" value="${esc(data.parentName||'')}" placeholder="Nama orang tua/wali"></div>
+  <div class="field"><label>Jenis Penerima Manfaat</label><select name="beneficiaryType"><option value="1" ${String(data.beneficiaryType||'1')==='1'?'selected':''}>Siswa</option><option value="2" ${String(data.beneficiaryType)==='2'?'selected':''}>Guru</option><option value="3" ${String(data.beneficiaryType)==='3'?'selected':''}>Tenaga Kependidikan</option></select></div>
+  <div class="field"><label>Status</label><select name="status"><option>Aktif</option><option>Tidak Aktif</option></select></div>
+  <div class="field"><label>Jenis Porsi</label><select name="portionType"><option value="Kecil" ${data.portionType!=='Besar'?'selected':''}>Kecil</option><option value="Besar" ${data.portionType==='Besar'?'selected':''}>Besar</option></select></div>
+  <div class="field full"><label>Alamat</label><textarea name="address" rows="2">${esc(data.address||'')}</textarea></div>`
+ if(type==='posRecipient')return `
+  <div class="field"><label>NIS / NIK</label><input name="identityNumber" value="${esc(data.identityNumber||'')}" required placeholder="NIS atau NIK"></div>
+  <div class="field"><label>Posyandu</label><select name="posyanduId" required>${optPosyandu}</select></div>
+  <div class="field full"><label>Nama Lengkap</label><input name="name" value="${esc(data.name||'')}" required></div>
+  <div class="field"><label>Tanggal Lahir</label><input name="birthDate" type="date" value="${esc(data.birthDate||'')}"></div>
+  <div class="field"><label>Jenis Kelamin</label><select name="genderCode"><option value="392" ${String(data.genderCode||data.gender)==='392'?'selected':''}>Laki-laki</option><option value="64" ${String(data.genderCode||data.gender)==='64'?'selected':''}>Perempuan</option></select></div>
+  <div class="field full"><label>Nama Orang Tua / Wali</label><input name="parentName" value="${esc(data.parentName||'')}" placeholder="Nama orang tua/wali"></div>
+  <div class="field"><label>Jenis Penerima</label><select name="recipientType" onchange="syncPosyanduPortion(this.value)"><option value="Balita" ${String(data.recipientType||'Balita')==='Balita'?'selected':''}>Balita</option><option value="Bumil" ${String(data.recipientType)==='Bumil'?'selected':''}>Bumil</option><option value="Busui" ${String(data.recipientType)==='Busui'?'selected':''}>Busui</option></select></div>
+  <div class="field"><label>Status</label><select name="status"><option ${String(data.status||'Aktif').toLowerCase()==='aktif'?'selected':''}>Aktif</option><option ${String(data.status||'').toLowerCase()==='tidak aktif'?'selected':''}>Tidak Aktif</option></select></div>
+  <div class="field"><label>Jenis Porsi</label><select name="portionType" id="posPortion" disabled><option value="Kecil">Kecil</option><option value="Besar">Besar</option></select><small class="muted">Otomatis: Balita = Kecil, Bumil/Busui = Besar</small></div>
+  <div class="field full"><label>Alamat</label><textarea name="address" rows="2">${esc(data.address||'')}</textarea></div>`;
+ if(type==='teacher')return `
+  <div class="field"><label>NIP/NUPTK</label><input name="number" value="${esc(data.number||'')}"></div>
+  <div class="field"><label>Jenis Kelamin</label><select name="gender"><option value="L">Laki-laki</option><option value="P">Perempuan</option></select></div>
+  <div class="field full"><label>Nama Guru</label><input name="name" value="${esc(data.name||'')}" required></div>
+  <div class="field"><label>Jabatan</label><input name="position" value="${esc(data.position||'Guru')}"></div>
+  <div class="field"><label>Sekolah</label><select name="schoolId" required>${optSchools}</select></div>
+  <div class="field"><label>Status</label><select name="status"><option>Aktif</option><option>Tidak Aktif</option></select></div>
+  <div class="field"><label>Jenis Porsi</label><select name="portionType"><option value="Kecil" ${data.portionType!=='Besar'?'selected':''}>Kecil</option><option value="Besar" ${data.portionType==='Besar'?'selected':''}>Besar</option></select></div>`;
+ if(type==='staff')return `
+  <div class="field full"><label>Nama Tendik</label><input name="name" value="${esc(data.name||'')}" required></div>
+  <div class="field"><label>NIP/NUPTK</label><input name="number" value="${esc(data.number||'')}"></div>
+  <div class="field"><label>Jabatan</label><input name="position" value="${esc(data.position||'')}"></div>
+  <div class="field"><label>Sekolah</label><select name="schoolId" required>${optSchools}</select></div>
+  <div class="field"><label>Status</label><select name="status"><option>Aktif</option><option>Tidak Aktif</option></select></div>
+  <div class="field"><label>Jenis Porsi</label><select name="portionType"><option value="Kecil" ${data.portionType!=='Besar'?'selected':''}>Kecil</option><option value="Besar" ${data.portionType==='Besar'?'selected':''}>Besar</option></select></div>`;
+ return `
+  <div class="field"><label>Kode</label><input name="code" value="${esc(data.code||'')}" placeholder="POS-0001" required></div>
+  <div class="field"><label>Status</label><select name="status"><option>Aktif</option><option>Tidak Aktif</option></select></div>
+  <div class="field full"><label>Nama B3 / Posyandu</label><input name="name" value="${esc(data.name||'')}" required></div>
+  <div class="field"><label>Desa/Kelurahan</label><input name="village" value="${esc(data.village||'')}"></div>
+  <div class="field"><label>Kecamatan</label><input name="district" value="${esc(data.district||'')}"></div>
+  <div class="field full"><label>Alamat/Lokasi</label><textarea name="address" rows="2">${esc(data.address||'')}</textarea></div>
+  <div class="field"><label>Penanggung Jawab</label><input name="pic" value="${esc(data.pic||'')}"></div>
+  <div class="field"><label>No. Kontak</label><input name="phone" value="${esc(data.phone||'')}"></div>
+  <div class="field"><label>Jumlah Penerima Saat Ini</label><input name="beneficiaries" type="number" min="0" value="${data.beneficiaries||0}"></div>`;
+}
+async function openModal(type,id=null){
+ currentType=type;currentId=id;
+ let data={};
+ const title=(id?'Edit ':'Tambah ')+({school:'Sekolah',student:'Penerima Manfaat',teacher:'Guru',staff:'Tenaga Kependidikan',posyandu:'B3 / Posyandu',posRecipient:'Penerima B3 / Posyandu'}[type]||'Data');
+ document.getElementById('modalTitle').textContent=title;
+
+ // Penting: tampilkan FORM TERLEBIH DAHULU.
+ // Jangan menunggu Firestore, karena jika koneksi lambat/error form tetap harus muncul.
+ document.getElementById('modal').classList.add('show');
+ window._schools=window._schools||[];
+ document.getElementById('dataForm').innerHTML=fields(type,{});
+
+ try{
+   const store=type==='school'?'schools':type==='student'?'beneficiaries':type==='teacher'?'teachers':type==='staff'?'staff':type==='posRecipient'?'posyandu_recipients':'posyandu';
+
+   // Sekolah tidak membutuhkan data pendukung untuk menampilkan form.
+   if(type==='school'){
+     if(id){
+       data=(await all('schools')).find(x=>x.id===id)||{};
+       document.getElementById('dataForm').innerHTML=fields(type,data);
+     }
+     if(data.level&&document.querySelector('[name=level]'))document.querySelector('[name=level]').value=data.level;
+     if(data.status&&document.querySelector('[name=status]'))document.querySelector('[name=status]').value=data.status;
+     return;
+   }
+
+   // Untuk form lain, ambil data edit + daftar sekolah secara bersamaan.
+   const [schoolList,records,posList]=await Promise.all([
+     all('schools'),
+     id?all(store):Promise.resolve([]),
+     all('posyandu')
+   ]);
+
+   window._schools=schoolList||[];
+   window._posyandu=posList||[];
+   data=id?(records.find(x=>x.id===id)||{}):{};
+   document.getElementById('dataForm').innerHTML=fields(type,data);
+   if(type==='posRecipient') syncPosyanduPortion(data.recipientType||'Balita');
+
+   if(data.level&&document.querySelector('[name=level]'))document.querySelector('[name=level]').value=data.level;
+   ['status','gender','mbg'].forEach(n=>{
+     if(data[n]&&document.querySelector(`[name=${n}]`))document.querySelector(`[name=${n}]`).value=data[n]
+   });
+ }catch(err){
+   console.error('openModal:',err);
+   // Jangan mengosongkan form ketika Firebase gagal.
+   // Form yang sudah tampil tetap dipertahankan agar pengguna bisa melihat masalahnya.
+   const info=document.createElement('div');
+   info.className='info full';
+   info.style.marginTop='12px';
+   info.innerHTML='<b>Form sudah dibuka.</b> Data pendukung Firebase belum dapat dimuat. Saat menyimpan, jika muncul error izin akses, periksa Cloud Firestore dan Security Rules.<br><small>'+esc(err.message||err)+'</small>';
+   document.getElementById('dataForm').appendChild(info);
+ }
+}
+function closeModal(){document.getElementById('modal').classList.remove('show');currentType=null;currentId=null}
+function syncPosyanduPortion(type){
+ const el=document.getElementById('posPortion');
+ if(!el)return;
+ el.value=String(type||'Balita')==='Balita'?'Kecil':'Besar';
+}
+async function saveForm(e){
+ e.preventDefault();
+
+ const btn=document.getElementById('saveBtn');
+ const form=e.target;
+
+ // Validasi manual supaya pengguna selalu mendapat pesan yang jelas.
+ const requiredFields=[...form.querySelectorAll('[required]')];
+ const invalid=requiredFields.find(el=>!String(el.value||'').trim());
+ if(invalid){
+   alert('Mohon lengkapi kolom: '+(invalid.closest('.field')?.querySelector('label')?.textContent||invalid.name));
+   invalid.focus();
+   return;
+ }
+
+ if(!currentUser){
+   alert('Sesi login Firebase tidak ditemukan. Silakan login kembali.');
+   return;
+ }
+
+ const originalText=btn?.textContent||'Simpan';
+ if(btn){
+   btn.disabled=true;
+   btn.textContent='Menyimpan...';
+   btn.style.opacity='.7';
+ }
+
+ toast('Sedang menyimpan data ke Firebase...');
+
+ try{
+   const f=new FormData(form);
+   let o=Object.fromEntries(f.entries());
+
+   if(currentType==='posRecipient'){
+     o.recipientType=o.recipientType||'Balita';
+     o.portionType=o.recipientType==='Balita'?'Kecil':'Besar';
+   }
+
+   const store=currentType==='school'?'schools':
+                currentType==='student'?'beneficiaries':
+                currentType==='teacher'?'teachers':
+                currentType==='staff'?'staff':
+                currentType==='posRecipient'?'posyandu_recipients':
+                'posyandu';
+
+   o.id=currentId||uid(
+     currentType==='school'?'SCH':
+     currentType==='student'?'PM':
+     currentType==='teacher'?'GRU':
+     currentType==='staff'?'TEN':
+     currentType==='posRecipient'?'B3':'POS'
+   );
+
+   o.createdAt=new Date().toISOString();
+   o.updatedAt=new Date().toISOString();
+
+   // Saat edit, pertahankan createdAt lama.
+   if(currentId){
+     const existing=await Promise.race([
+       all(store),
+       new Promise((_,reject)=>setTimeout(()=>reject(new Error('Timeout saat membaca data lama dari Firebase (>10 detik).')),10000))
+     ]);
+     const old=existing.find(x=>x.id===currentId);
+     if(old?.createdAt) o.createdAt=old.createdAt;
+   }
+
+   // Beri batas waktu supaya aplikasi tidak terlihat "diam" jika Firestore bermasalah.
+   await Promise.race([
+     put(store,o),
+     new Promise((_,reject)=>setTimeout(
+       ()=>reject(new Error('Timeout saat menyimpan ke Firestore (>10 detik). Periksa koneksi internet, Cloud Firestore, dan Security Rules.')),
+       10000
+     ))
+   ]);
+
+   toast('✓ Data berhasil disimpan ke Firebase');
+   closeModal();
+
+   // Refresh dipisahkan dari proses simpan. Jadi jika refresh lambat,
+   // pengguna tetap mendapat konfirmasi bahwa data sudah tersimpan.
+   try{
+     await refresh();
+   }catch(refreshErr){
+     console.error('Refresh setelah simpan gagal:',refreshErr);
+   }
+
+ }catch(err){
+   console.error('Gagal menyimpan:',err);
+
+   let msg=err?.message||String(err);
+
+   if(err?.code==='permission-denied'){
+     msg='Permission denied: Security Rules Firestore menolak penulisan untuk akun ini.';
+   }else if(err?.code==='unauthenticated'){
+     msg='Pengguna belum terautentikasi ke Firebase.';
+   }else if(err?.code==='failed-precondition'){
+     msg='Firestore belum siap. Pastikan Cloud Firestore sudah dibuat pada project pmsppg.';
+   }
+
+   alert(
+     'DATA BELUM TERSIMPAN\n\n'+
+     msg+
+     '\n\nProject: pmsppg'+
+     '\nAkun: '+(currentUser.email||'-')+
+     '\n\nPeriksa Cloud Firestore dan Security Rules jika error berhubungan dengan izin akses.'
+   );
+
+   toast('✕ Gagal menyimpan data');
+ }finally{
+   if(btn){
+     btn.disabled=false;
+     btn.textContent=originalText;
+     btn.style.opacity='1';
+   }
+ }
+}
+async function remove(store,id){
+ if(!confirm('Hapus data ini? Data yang dihapus tidak dapat dikembalikan kecuali dari backup.'))return;
+ await del(store,id);toast('Data berhasil dihapus');refresh()
+}
+function table(headers,rows){return `<table><thead><tr>${headers.map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>${rows.length?rows.join(''):`<tr><td colspan="${headers.length}" class="empty">Belum ada data.</td></tr>`}</tbody></table>`}
+async function renderSchools(){
+ let [schools,students,teachers,staff]=await Promise.all([
+   all('schools'),all('beneficiaries'),all('teachers'),all('staff')
+ ]);
+ const q=(document.getElementById('schoolSearch')?.value||'').toLowerCase();
+ const status=(document.getElementById('schoolStatus')?.value||'').toLowerCase();
+
+ schools=schools.filter(x=>
+   (!q||[x.code,x.name,x.npsn,x.address].join(' ').toLowerCase().includes(q)) &&
+   (!status||String(x.status||'').toLowerCase()===status)
+ );
+
+ const isActive=x=>String(x.status||'').trim().toLowerCase()==='aktif';
+ const getPortion=x=>String(x.portionType||x.jenisPorsi||x.portion||'').trim().toLowerCase();
+
+ const rows=schools.map(s=>{
+   const schoolStudents=students.filter(x=>x.schoolId===s.id&&isActive(x));
+   const schoolTeachers=teachers.filter(x=>x.schoolId===s.id&&isActive(x));
+   const schoolStaff=staff.filter(x=>x.schoolId===s.id&&isActive(x));
+   const allPM=[...schoolStudents,...schoolTeachers,...schoolStaff];
+   const kecil=allPM.filter(x=>getPortion(x)==='kecil').length;
+   const besar=allPM.filter(x=>getPortion(x)==='besar').length;
+
+   return `<tr>
+    <td>${esc(s.code||'-')}</td>
+    <td><b>${esc(s.name||'-')}</b></td>
+    <td><span class="badge badge-small-portion">${kecil}</span></td>
+    <td><span class="badge badge-large-portion">${besar}</span></td>
+    <td><b>${kecil+besar}</b></td>
+    <td><span class="badge ${isActive(s)?'badge-active':'badge-off'}">${isActive(s)?'AKTIF':'TIDAK AKTIF'}</span></td>
+    <td><div class="actions">
+      <button class="btn-secondary" onclick="openModal('school','${s.id}')">Edit</button>
+      <button class="btn-danger" onclick="remove('schools','${s.id}')">Hapus</button>
+    </div></td>
+   </tr>`;
+ });
+
+ document.getElementById('schoolTable').innerHTML=table(
+   ['Kode','Nama Sekolah','Porsi Kecil','Porsi Besar','Jumlah','Status','Aksi'],
+   rows
+ );
+}
+
+async function renderStudents(){
+ let [a,s]=await Promise.all([all('beneficiaries'),all('schools')]),q=(document.getElementById('studentSearch')?.value||'').toLowerCase(),sid=document.getElementById('studentSchool')?.value||'',st=document.getElementById('studentStatus')?.value||'';
+ a=a.filter(x=>(!q||[x.identityNumber,x.nisn,x.nis,x.name,x.parentName].join(' ').toLowerCase().includes(q))&&(!sid||x.schoolId===sid)&&(!st||x.status===st));
+ const genderText=x=>String(x.genderCode||x.gender)==='64'?'Perempuan':String(x.genderCode||x.gender)==='392'?'Laki-laki':(x.gender||'-');
+ const beneficiaryText=x=>String(x.beneficiaryType||'1')==='1'?'Siswa':String(x.beneficiaryType)==='2'?'Guru':String(x.beneficiaryType)==='3'?'Tenaga Kependidikan':(x.beneficiaryType||'-');
+ document.getElementById('studentTable').innerHTML=table(['NIS / NIK','Nama','Tanggal Lahir','Jenis Kelamin','Orang Tua/Wali','Sekolah','Jenis Penerima','Status','Porsi','Aksi'],a.map(x=>`<tr><td>${esc(x.identityNumber||x.nisn||x.nis||'-')}</td><td><b>${esc(x.name)}</b></td><td>${esc(formatDateDisplay(x.birthDate))}</td><td>${esc(genderText(x))}</td><td>${esc(x.parentName||'-')}</td><td>${esc(schoolName(x.schoolId,s))}</td><td>${esc(beneficiaryText(x))}</td><td><span class="badge ${String(x.status||'').toLowerCase()==='aktif'?'badge-active':'badge-off'}">${esc(x.status)}</span></td><td>${esc(x.portionType||'-')}</td><td><div class="actions"><button class="btn-secondary" onclick="openModal('student','${x.id}')">Edit</button><button class="btn-danger" onclick="remove('beneficiaries','${x.id}')">Hapus</button></div></td></tr>`))
+}
+async function renderTeachers(){
+ let [a,s]=await Promise.all([all('teachers'),all('schools')]),q=(document.getElementById('teacherSearch')?.value||'').toLowerCase(),sid=document.getElementById('teacherSchool')?.value||'';
+ a=a.filter(x=>(!q||[x.name,x.number,x.position,x.parentName].join(' ').toLowerCase().includes(q))&&(!sid||x.schoolId===sid));
+ const genderText=x=>String(x.genderCode||x.gender)==='64'?'Perempuan':String(x.genderCode||x.gender)==='392'?'Laki-laki':(String(x.gender||'').toUpperCase()==='P'?'Perempuan':String(x.gender||'').toUpperCase()==='L'?'Laki-laki':'-');
+ const beneficiaryText='Guru';
+ document.getElementById('teacherTable').innerHTML=table(
+  ['NIS / NIK','Nama','Tanggal Lahir','Jenis Kelamin','Orang Tua/Wali','Sekolah','Jenis Penerima','Status','Porsi','Aksi'],
+  a.map(x=>`<tr><td>${esc(x.number||x.identityNumber||'-')}</td><td><b>${esc(x.name)}</b></td><td>${esc(formatDateDisplay(x.birthDate))}</td><td>${esc(genderText(x))}</td><td>${esc(x.parentName||'-')}</td><td>${esc(schoolName(x.schoolId,s))}</td><td>${beneficiaryText}</td><td><span class="badge ${String(x.status||'').toLowerCase()==='aktif'?'badge-active':'badge-off'}">${String(x.status||'').toLowerCase()==='aktif'?'AKTIF':'TIDAK AKTIF'}</span></td><td>${esc(x.portionType||'-')}</td><td><div class="actions"><button class="btn-secondary" onclick="openModal('teacher','${x.id}')">Edit</button><button class="btn-danger" onclick="remove('teachers','${x.id}')">Hapus</button></div></td></tr>`)
+ )
+}
+async function renderStaff(){
+ let [a,s]=await Promise.all([all('staff'),all('schools')]),q=(document.getElementById('staffSearch')?.value||'').toLowerCase(),sid=document.getElementById('staffSchool')?.value||'';
+ a=a.filter(x=>(!q||[x.name,x.number,x.position,x.parentName].join(' ').toLowerCase().includes(q))&&(!sid||x.schoolId===sid));
+ const genderText=x=>String(x.genderCode||x.gender)==='64'?'Perempuan':String(x.genderCode||x.gender)==='392'?'Laki-laki':(String(x.gender||'').toUpperCase()==='P'?'Perempuan':String(x.gender||'').toUpperCase()==='L'?'Laki-laki':'-');
+ const beneficiaryText='Tenaga Kependidikan';
+ document.getElementById('staffTable').innerHTML=table(
+  ['NIS / NIK','Nama','Tanggal Lahir','Jenis Kelamin','Orang Tua/Wali','Sekolah','Jenis Penerima','Status','Porsi','Aksi'],
+  a.map(x=>`<tr><td>${esc(x.number||x.identityNumber||'-')}</td><td><b>${esc(x.name)}</b></td><td>${esc(formatDateDisplay(x.birthDate))}</td><td>${esc(genderText(x))}</td><td>${esc(x.parentName||'-')}</td><td>${esc(schoolName(x.schoolId,s))}</td><td>${beneficiaryText}</td><td><span class="badge ${String(x.status||'').toLowerCase()==='aktif'?'badge-active':'badge-off'}">${String(x.status||'').toLowerCase()==='aktif'?'AKTIF':'TIDAK AKTIF'}</span></td><td>${esc(x.portionType||'-')}</td><td><div class="actions"><button class="btn-secondary" onclick="openModal('staff','${x.id}')">Edit</button><button class="btn-danger" onclick="remove('staff','${x.id}')">Hapus</button></div></td></tr>`)
+ )
+}
+
+let posRecipientPage=1;
+let posRecipientPageSize=10;
+function resetPosyanduRecipientPage(){posRecipientPage=1;}
+function renderPosRecipientPagination(total){
+ const el=document.getElementById('posRecipientPagination'); if(!el)return;
+ const pages=Math.max(1,Math.ceil(total/posRecipientPageSize));
+ if(posRecipientPage>pages)posRecipientPage=pages;
+ const start=total?((posRecipientPage-1)*posRecipientPageSize+1):0;
+ const end=Math.min(posRecipientPage*posRecipientPageSize,total);
+ let b='';
+ const add=(p,label,disabled,active)=>{b+=`<button class="page-btn ${active?'active':''}" ${disabled?'disabled':''} onclick="posRecipientPage=${p};renderPosyanduRecipients()">${label}</button>`};
+ add(Math.max(1,posRecipientPage-1),'‹',posRecipientPage===1,false);
+ let from=Math.max(1,posRecipientPage-2),to=Math.min(pages,from+4);
+ if(to-from<4)from=Math.max(1,to-4);
+ for(let p=from;p<=to;p++)add(p,String(p),false,p===posRecipientPage);
+ add(Math.min(pages,posRecipientPage+1),'›',posRecipientPage===pages,false);
+ el.innerHTML=`<div class="pagination-info">Menampilkan ${start}-${end} dari ${total} penerima</div><div class="pagination-buttons">${b}</div>`;
+}
+async function renderPosyanduRecipients(){
+ let [a,p]=await Promise.all([all('posyandu_recipients'),all('posyandu')]);
+
+ const q=(document.getElementById('posSearch')?.value||'').toLowerCase();
+ const type=document.getElementById('posRecipientType')?.value||'';
+ const status=document.getElementById('posStatus')?.value||'';
+ const selectedPos=document.getElementById('posRecipientPosyandu')?.value||'';
+
+ // Isi pilihan Posyandu dari Master Posyandu.
+ const posSelect=document.getElementById('posRecipientPosyandu');
+ if(posSelect){
+   const current=posSelect.value;
+   posSelect.innerHTML='<option value="">Semua Posyandu</option>'+
+     p.filter(x=>String(x.status||'').toLowerCase()==='aktif')
+      .sort((a,b)=>String(a.name||'').localeCompare(String(b.name||'')))
+      .map(x=>`<option value="${x.id}">${esc(x.name||'-')}</option>`).join('');
+   if(p.some(x=>x.id===current))posSelect.value=current;
+ }
+
+ const pageSizeEl=document.getElementById('posRecipientPageSize');
+ if(pageSizeEl)posRecipientPageSize=Number(pageSizeEl.value)||10;
+
+ a=a.filter(x=>
+   (!q||[x.identityNumber,x.name,x.parentName].join(' ').toLowerCase().includes(q)) &&
+   (!type||x.recipientType===type) &&
+   (!status||String(x.status||'').toLowerCase()===status.toLowerCase()) &&
+   (!selectedPos||x.posyanduId===selectedPos)
+ );
+
+ const total=a.length;
+ const pages=Math.max(1,Math.ceil(total/posRecipientPageSize));
+ if(posRecipientPage>pages)posRecipientPage=pages;
+
+ const rows=a.slice(
+   (posRecipientPage-1)*posRecipientPageSize,
+   posRecipientPage*posRecipientPageSize
+ );
+
+ const posName=id=>p.find(x=>x.id===id)?.name||'-';
+ const genderText=x=>{
+   const g=String(x.genderCode||x.gender);
+   return g==='64'?'Perempuan':g==='392'?'Laki-laki':(x.gender||'-');
+ };
+
+ document.getElementById('posTable').innerHTML=table(
+  ['NIS / NIK','Nama','Tanggal Lahir','Jenis Kelamin','Orang Tua/Wali','Posyandu','Jenis Penerima','Status','Porsi','Aksi'],
+  rows.map(x=>`<tr>
+   <td>${esc(x.identityNumber||'-')}</td>
+   <td><b>${esc(x.name||'-')}</b></td>
+   <td>${esc(formatDateDisplay(x.birthDate))}</td>
+   <td>${esc(genderText(x))}</td>
+   <td>${esc(x.parentName||'-')}</td>
+   <td>${esc(posName(x.posyanduId))}</td>
+   <td>${esc(x.recipientType||'-')}</td>
+   <td><span class="badge ${String(x.status||'').toLowerCase()==='aktif'?'badge-active':'badge-off'}">${String(x.status||'').toLowerCase()==='aktif'?'AKTIF':'TIDAK AKTIF'}</span></td>
+   <td>${esc(x.recipientType==='Balita'?'Kecil':'Besar')}</td>
+   <td><div class="actions">
+     <button class="btn-secondary" onclick="openModal('posRecipient','${x.id}')">Edit</button>
+     <button class="btn-danger" onclick="remove('posyandu_recipients','${x.id}')">Hapus</button>
+   </div></td>
+  </tr>`)
+ );
+
+ renderPosRecipientPagination(total);
+}
+
+function downloadPosyanduTemplate(){
+ if(typeof XLSX==='undefined'){alert('Fitur Excel membutuhkan koneksi internet saat pertama kali digunakan.');return}
+ const data=[{NIS_NIK:'327000000001',Nama:'Contoh Balita',Tanggal_Lahir:'2022-01-15',Jenis_Kelamin:392,Nama_Orang_Tua:'Nama Orang Tua',Jenis_Penerima:'Balita',Kode_Posyandu:'POS-0001',Status:'Aktif',Jenis_Porsi:'Kecil',Alamat:'Alamat penerima'}];
+ const wb=XLSX.utils.book_new();
+ XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(data),'Data Posyandu');
+ XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([
+  ['PETUNJUK IMPORT PENERIMA POSYANDU'],
+  ['NIS_NIK','Nomor identitas penerima.'],
+  ['Nama','Nama lengkap penerima.'],
+  ['Tanggal_Lahir','Format DD-MM-YYYY atau YYYY-MM-DD. Angka serial Excel dikonversi otomatis.'],
+  ['Jenis_Kelamin','64 = Perempuan, 392 = Laki-laki.'],
+  ['Nama_Orang_Tua','Nama orang tua/wali.'],
+  ['Jenis_Penerima','Balita, Bumil, atau Busui.'],
+  ['Kode_Posyandu','Sama dengan Kode pada Master Posyandu.'],
+  ['Status','Aktif atau Tidak Aktif.'],
+  ['Jenis_Porsi','Otomatis: Balita = Kecil, Bumil/Busui = Besar.'],
+  ['Alamat','Alamat penerima.']
+ ]),'Petunjuk');
+ XLSX.writeFile(wb,'template-import-penerima-posyandu-sppg.xlsx');
+}
+
+async function importPosyanduExcel(event){
+ const file=event.target.files[0]; if(!file)return;
+ toast('Membaca file Excel Posyandu...');
+ try{
+  if(typeof XLSX==='undefined')throw new Error('Library Excel belum tersedia.');
+  const posList=await all('posyandu');
+  if(!posList.length){alert('Buat Master Posyandu terlebih dahulu.');event.target.value='';return}
+  const wb=XLSX.read(await file.arrayBuffer(),{type:'array'});
+  const ws=wb.Sheets[wb.SheetNames[0]];
+  const rows=XLSX.utils.sheet_to_json(ws,{defval:''});
+  if(!rows.length){alert('File Excel kosong.');event.target.value='';return}
+  const norm=v=>String(v??'').trim();
+  const val=(r,keys)=>{for(const k of keys){const f=Object.keys(r).find(x=>x.toLowerCase().replace(/[^a-z0-9]/g,'')===k.toLowerCase().replace(/[^a-z0-9]/g,''));if(f&&norm(r[f])!=='')return norm(r[f]);}return ''};
+  const gender=v=>{const z=norm(v).toLowerCase();return ['64','perempuan','p','wanita'].includes(z)?'64':['392','laki-laki','laki laki','l','pria'].includes(z)?'392':''};
+  const recipient=v=>{const z=norm(v).toLowerCase();if(['balita','1'].includes(z))return 'Balita';if(['bumil','ibu hamil','hamil','2'].includes(z))return 'Bumil';if(['busui','ibu menyusui','menyusui','3'].includes(z))return 'Busui';return ''};
+  const normalizeStatus=v=>/^aktif$/i.test(v)?'Aktif':/^tidak\s+aktif$/i.test(v)?'Tidak Aktif':v||'Aktif';
+  const existing=await all('posyandu_recipients');
+  let ok=0,skip=0,errors=[];
+  for(let i=0;i<rows.length;i++){
+   const r=rows[i];
+   const identity=val(r,['NIS_NIK','NIS/NIK','NIS','NIK']);
+   const name=val(r,['Nama','Nama Lengkap','Nama Penerima']);
+   const birthDate=normalizeISODate(val(r,['Tanggal_Lahir','Tanggal Lahir','Tgl Lahir']));
+   const g=gender(val(r,['Jenis_Kelamin','Jenis Kelamin','JK','Gender']));
+   const parentName=val(r,['Nama_Orang_Tua','Nama Orang Tua','Orang Tua','Nama Wali']);
+   const recipientType=recipient(val(r,['Jenis_Penerima','Jenis Penerima','Jenis_Penerima_Manfaat','Jenis Penerima Manfaat']));
+   const code=val(r,['Kode_Posyandu','Kode Posyandu','Kode']);
+   const posNameText=val(r,['Nama_Posyandu','Nama Posyandu','Posyandu']);
+   const pos=posList.find(p=>(code&&String(p.code||'').toLowerCase()===code.toLowerCase())||(posNameText&&String(p.name||'').toLowerCase()===posNameText.toLowerCase()));
+   const status=normalizeStatus(val(r,['Status']));
+   const address=val(r,['Alamat','Address']);
+   if(!identity||!name||!g||!recipientType||!pos){skip++;errors.push(`Baris ${i+2}: NIS/NIK, Nama, Jenis Kelamin, Jenis Penerima, atau Posyandu tidak valid.`);continue}
+   const old=existing.find(x=>String(x.identityNumber||'')===identity&&x.posyanduId===pos.id);
+   await put('posyandu_recipients',{id:old?.id||uid('B3'),identityNumber:identity,name,birthDate,genderCode:g,parentName,recipientType,posyanduId:pos.id,status,portionType:recipientType==='Balita'?'Kecil':'Besar',address,createdAt:old?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()});
+   ok++;
+  }
+  alert(`Import Posyandu selesai.\n\nBerhasil: ${ok}\nDilewati: ${skip}`+(errors.length?`\n\n${errors.slice(0,8).join('\n')}`:''));
+  toast(`Import Posyandu: ${ok} berhasil`);
+  refresh();
+ }catch(err){console.error('Import Posyandu:',err);alert('Import Posyandu gagal:\n\n'+(err?.message||err))}
+ event.target.value='';
+}
+
+async function renderPosyandu(){
+ let [a,r]=await Promise.all([all('posyandu'),all('posyandu_recipients')]);
+ const q=(document.getElementById('posMasterSearch')?.value||'').toLowerCase();
+ a=a.filter(x=>[x.code,x.name,x.village,x.district,x.pic].join(' ').toLowerCase().includes(q));
+ const activeCount=id=>r.filter(x=>x.posyanduId===id && String(x.status||'').toLowerCase()==='aktif').length;
+ document.getElementById('posMasterTable').innerHTML=table(
+  ['Kode','Nama','Lokasi','Penanggung Jawab','Penerima Aktif','Status','Aksi'],
+  a.map(x=>`<tr><td>${esc(x.code||'-')}</td><td><b>${esc(x.name)}</b></td><td>${esc([x.village,x.district].filter(Boolean).join(' / ')||x.address||'-')}</td><td>${esc(x.pic||'-')}</td><td>${activeCount(x.id)}</td><td><span class="badge ${String(x.status||'').toLowerCase()==='aktif'?'badge-active':'badge-off'}">${String(x.status||'').toLowerCase()==='aktif'?'AKTIF':'TIDAK AKTIF'}</span></td><td><div class="actions"><button class="btn-secondary" onclick="openModal('posyandu','${x.id}')">Edit</button><button class="btn-danger" onclick="remove('posyandu','${x.id}')">Hapus</button></div></td></tr>`)
+ )
+}
+async function fillSchoolFilters(){
+ let s=await all('schools'), opts='<option value="">Semua sekolah</option>'+s.map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join('');
+ ['studentSchool','teacherSchool','staffSchool'].forEach(id=>{let el=document.getElementById(id);if(el){let old=el.value;el.innerHTML=opts;el.value=old}})
+}
+async function dashboard(){
+ let [s,st,t,staff,p,pr]=await Promise.all([
+   all('schools'),
+   all('beneficiaries'),
+   all('teachers'),
+   all('staff'),
+   all('posyandu'),
+   all('posyandu_recipients')
+ ]);
+
+ const isActive=x=>String(x?.status||'').trim().toLowerCase()==='aktif';
+ const active=x=>x.filter(isActive);
+
+ const activeSchools=active(s);
+ const activeStudents=active(st);
+ const activeTeachers=active(t);
+ const activeStaff=active(staff);
+ const activePosyandu=active(p);
+ const activePosRecipients=active(pr);
+
+ statSchools.textContent=activeSchools.length;
+ statStudents.textContent=activeStudents.length;
+ statTeachers.textContent=activeTeachers.length;
+ statStaff.textContent=activeStaff.length;
+ statPosyandu.textContent=activePosyandu.length;
+
+ // PM sekolah = siswa + guru + tendik aktif.
+ const totalPMSekolah=activeStudents.length+activeTeachers.length+activeStaff.length;
+
+ // PM Posyandu = Balita + Bumil + Busui aktif.
+ const totalPMPosyandu=activePosRecipients.length;
+
+ // Total PM keseluruhan.
+ const totalPMKeseluruhan=totalPMSekolah+totalPMPosyandu;
+
+ if(document.getElementById('statPM')) {
+   document.getElementById('statPM').textContent=totalPMSekolah;
+ }
+ if(document.getElementById('statPMPosyandu')) {
+   document.getElementById('statPMPosyandu').textContent=totalPMPosyandu;
+ }
+ if(document.getElementById('statPMTotal')) {
+   document.getElementById('statPMTotal').textContent=totalPMKeseluruhan;
+ }
+
+ let rows=activeSchools.slice(0,10).map(x=>`<tr>
+   <td>${esc(x.code||'-')}</td>
+   <td>${esc(x.name||'-')}</td>
+   <td>${esc(x.level||'-')}</td>
+   <td>${activeStudents.filter(a=>a.schoolId===x.id).length}</td>
+   <td>${activeTeachers.filter(a=>a.schoolId===x.id).length}</td>
+   <td>${activeStaff.filter(a=>a.schoolId===x.id).length}</td>
+ </tr>`);
+
+ const dashTable=document.getElementById('dashboardSchools');
+ if(dashTable){
+   dashTable.innerHTML=table(['Kode','Sekolah','Jenjang','Siswa','Guru','Tendik'],rows);
+ }
+}
+
+async function repairPosyanduRecipientData(){
+ try{
+  const masters=await all('posyandu');
+  const bad=masters.filter(x=>x.identityNumber||x.recipientType||x.posyanduId);
+  for(const x of bad){
+   const rt=['Balita','Bumil','Busui'].includes(x.recipientType)?x.recipientType:'Balita';
+   await put('posyandu_recipients',{id:x.id,identityNumber:x.identityNumber||'',name:x.name||'',birthDate:x.birthDate||'',genderCode:x.genderCode||x.gender||'',parentName:x.parentName||'',recipientType:rt,posyanduId:x.posyanduId||'',status:String(x.status||'Aktif').toLowerCase()==='aktif'?'Aktif':'Tidak Aktif',portionType:rt==='Balita'?'Kecil':'Besar',address:x.address||'',createdAt:x.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()});
+   await del('posyandu',x.id);
+  }
+ }catch(err){console.error('Repair Posyandu:',err)}
+}
+async function refresh(){await repairPosyanduRecipientData();await fillSchoolFilters();await dashboard();if(document.getElementById('schools').classList.contains('active'))renderSchools();if(document.getElementById('students')?.classList.contains('active'))renderStudents();if(document.getElementById('teachers').classList.contains('active'))renderTeachers();if(document.getElementById('staff').classList.contains('active'))renderStaff();if(document.getElementById('posyandu').classList.contains('active')){renderPosyandu();renderPosyanduRecipients()}}
+
+function downloadStudentTemplate(){
+ if(typeof XLSX==='undefined'){alert('Fitur Excel membutuhkan koneksi internet saat pertama kali digunakan.');return}
+ const data=[{NIS_NIK:'1234567890',Nama:'Contoh Nama',Tanggal_Lahir:'2015-01-15',Jenis_Kelamin:392,Nama_Orang_Tua:'Nama Orang Tua',Jenis_Penerima_Manfaat:1,Kode_Sekolah:'SCH-0001',Status:'Aktif',Jenis_Porsi:'Kecil',Alamat:'Alamat penerima'}];
+ const ws=XLSX.utils.json_to_sheet(data),wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Data Penerima');XLSX.writeFile(wb,'template-import-penerima-manfaat-sppg.xlsx');
+}
+async function importStudentsExcel(event){
+ const file=event.target.files[0];if(!file)return;
+ try{
+  if(typeof XLSX==='undefined')throw new Error('Library Excel belum tersedia.');
+  const schools=await all('schools');if(!schools.length){alert('Tambahkan data sekolah terlebih dahulu.');event.target.value='';return}
+  const wb=XLSX.read(await file.arrayBuffer(),{type:'array'}),ws=wb.Sheets[wb.SheetNames[0]],rows=XLSX.utils.sheet_to_json(ws,{defval:''});
+  const norm=v=>String(v??'').trim();const val=(r,keys)=>{for(const k of keys){const f=Object.keys(r).find(x=>x.toLowerCase().replace(/[^a-z0-9]/g,'')===k.toLowerCase().replace(/[^a-z0-9]/g,''));if(f&&norm(r[f])!=='')return norm(r[f])}return ''};
+  const gender=v=>{let z=norm(v).toLowerCase();return ['64','perempuan','p','wanita'].includes(z)?'64':['392','laki-laki','laki laki','l','pria'].includes(z)?'392':''};
+  const type=v=>{let z=norm(v).toLowerCase();return ['1','siswa'].includes(z)?'1':['2','guru'].includes(z)?'2':['3','tendik','tenaga kependidikan'].includes(z)?'3':''};
+  const date=v=>normalizeISODate(v);
+  const old=await all('beneficiaries');let ok=0,skip=0,errors=[];
+  for(let i=0;i<rows.length;i++){const r=rows[i],identity=val(r,['NIS_NIK','NIS/NIK','NIS NIK','NIS','NIK']),name=val(r,['Nama','Nama Lengkap']),code=val(r,['Kode_Sekolah','Kode Sekolah']),sn=val(r,['Nama_Sekolah','Nama Sekolah','Sekolah']);const school=schools.find(s=>(code&&String(s.code).toLowerCase()===code.toLowerCase())||(sn&&String(s.name).toLowerCase()===sn.toLowerCase()));const g=gender(val(r,['Jenis_Kelamin','Jenis Kelamin','JK'])),bt=type(val(r,['Jenis_Penerima_Manfaat','Jenis Penerima Manfaat','Jenis Penerima']));if(!identity||!name||!school||!g||!bt){skip++;errors.push(`Baris ${i+2}: data wajib/kode tidak valid.`);continue}const ex=old.find(x=>String(x.identityNumber||x.nisn||x.nis)===identity);await put('beneficiaries',{id:ex?.id||uid('PM'),identityNumber:identity,name,birthDate:date(val(r,['Tanggal_Lahir','Tanggal Lahir','Tgl Lahir'])),genderCode:g,parentName:val(r,['Nama_Orang_Tua','Nama Orang Tua','Orang Tua','Nama Wali']),beneficiaryType:bt,schoolId:school.id,status:val(r,['Status'])||'Aktif',portionType:val(r,['Jenis_Porsi','Jenis Porsi','Porsi']).toLowerCase()==='besar'?'Besar':'Kecil',address:val(r,['Alamat','Address']),createdAt:ex?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()});ok++}
+  alert(`Import selesai. Berhasil: ${ok}, dilewati: ${skip}.`+(errors.length?`\n\n${errors.slice(0,5).join('\n')}`:''));toast(`Import penerima: ${ok} berhasil`);refresh();
+ }catch(err){alert('Import gagal: '+err.message)}event.target.value='';
+}
+
+
+function downloadAllPMTemplate(){
+ if(typeof XLSX==='undefined'){alert('Fitur Excel membutuhkan koneksi internet saat pertama kali digunakan.');return}
+ const data=[
+  {NIS_NIK:'3203956208',Nama:'Contoh Siswa',Tanggal_Lahir:'2015-01-15',Jenis_Kelamin:392,Nama_Orang_Tua:'Nama Orang Tua',Jenis_Penerima_Manfaat:1,Kode_Sekolah:'SCH-0001',Status:'Aktif',Jenis_Porsi:'Kecil',Alamat:'Alamat penerima'},
+  {NIS_NIK:'198001012005011001',Nama:'Contoh Guru',Tanggal_Lahir:'1980-01-01',Jenis_Kelamin:392,Nama_Orang_Tua:'-',Jenis_Penerima_Manfaat:2,Kode_Sekolah:'SCH-0001',Status:'Aktif',Jenis_Porsi:'Besar',Alamat:'Alamat penerima'},
+  {NIS_NIK:'198501012010012002',Nama:'Contoh Tendik',Tanggal_Lahir:'1985-01-01',Jenis_Kelamin:64,Nama_Orang_Tua:'-',Jenis_Penerima_Manfaat:3,Kode_Sekolah:'SCH-0001',Status:'Aktif',Jenis_Porsi:'Besar',Alamat:'Alamat penerima'}
+ ];
+ const ws=XLSX.utils.json_to_sheet(data);
+ const wb=XLSX.utils.book_new();
+ XLSX.utils.book_append_sheet(wb,ws,'Data PM');
+ const petunjuk=[
+  ['PETUNJUK IMPORT SEMUA PENERIMA MANFAAT'],
+  ['NIS_NIK','NIS untuk siswa atau NIP/NIK untuk Guru/Tendik.'],
+  ['Nama','Nama lengkap penerima manfaat.'],
+  ['Tanggal_Lahir','Format DD-MM-YYYY atau YYYY-MM-DD. Angka tanggal Excel juga akan dikonversi otomatis.'],
+  ['Jenis_Kelamin','64 = Perempuan, 392 = Laki-laki.'],
+  ['Nama_Orang_Tua','Nama orang tua/wali. Untuk Guru/Tendik dapat diisi "-" jika tidak diperlukan.'],
+  ['Jenis_Penerima_Manfaat','1 = Siswa, 2 = Guru, 3 = Tenaga Kependidikan.'],
+  ['Kode_Sekolah','Harus sama dengan Kode Sekolah pada Master Sekolah.'],
+  ['Status','Aktif atau Tidak Aktif.'],
+  ['Jenis_Porsi','Kecil atau Besar.'],
+  ['Alamat','Alamat penerima manfaat.'],
+  ['CATATAN','Satu file Excel dapat berisi campuran Siswa, Guru dan Tendik. Aplikasi otomatis memisahkan berdasarkan kode Jenis_Penerima_Manfaat.']
+ ];
+ XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(petunjuk),'Petunjuk');
+ XLSX.writeFile(wb,'template-import-semua-penerima-manfaat-sppg.xlsx');
+}
+
+async function importAllPMExcel(event){
+ const file=event.target.files[0];
+ if(!file)return;
+ toast('Membaca file Excel...');
+
+ try{
+  if(typeof XLSX==='undefined')throw new Error('Library Excel belum tersedia.');
+  const schools=await all('schools');
+  if(!schools.length){alert('Tambahkan data sekolah terlebih dahulu.');event.target.value='';return}
+
+  const wb=XLSX.read(await file.arrayBuffer(),{type:'array'});
+  const ws=wb.Sheets[wb.SheetNames[0]];
+  const rows=XLSX.utils.sheet_to_json(ws,{defval:''});
+  if(!rows.length){
+   alert('File Excel berhasil dibaca, tetapi tidak ada data pada sheet pertama.');
+   event.target.value='';
+   return;
+  }
+  toast(`Membaca ${rows.length} baris data...`);
+
+  const norm=v=>String(v??'').trim();
+  const val=(r,keys)=>{
+   for(const k of keys){
+    const f=Object.keys(r).find(x=>x.toLowerCase().replace(/[^a-z0-9]/g,'')===k.toLowerCase().replace(/[^a-z0-9]/g,''));
+    if(f&&norm(r[f])!=='')return norm(r[f]);
+   }
+   return '';
+  };
+  const gender=v=>{
+   const z=norm(v).toLowerCase();
+   return ['64','perempuan','p','wanita'].includes(z)?'64':['392','laki-laki','laki laki','l','pria'].includes(z)?'392':'';
+  };
+  const type=v=>{
+   const z=norm(v).toLowerCase();
+   return ['1','siswa'].includes(z)?'1':['2','guru'].includes(z)?'2':['3','tendik','tenaga kependidikan'].includes(z)?'3':'';
+  };
+  const date=v=>normalizeISODate(v);
+  const oldBeneficiaries=await all('beneficiaries');
+  const oldTeachers=await all('teachers');
+  const oldStaff=await all('staff');
+
+  let siswaOk=0,guruOk=0,tendikOk=0,skip=0,errors=[];
+
+  for(let i=0;i<rows.length;i++){
+   const r=rows[i];
+   const identity=val(r,['NIS_NIK','NIS/NIK','NIS NIK','NIS','NIK','NIP/NUPTK','NIP NUPTK','NIP','NUPTK']);
+   const name=val(r,['Nama','Nama Lengkap','Nama Penerima']);
+   const code=val(r,['Kode_Sekolah','Kode Sekolah']);
+   const schoolText=val(r,['Nama_Sekolah','Nama Sekolah','Sekolah']);
+   const school=schools.find(s=>
+    (code&&String(s.code).toLowerCase()===code.toLowerCase()) ||
+    (schoolText&&String(s.name).toLowerCase()===schoolText.toLowerCase())
+   );
+   const g=gender(val(r,['Jenis_Kelamin','Jenis Kelamin','JK','Gender']));
+   const pmType=type(val(r,['Jenis_Penerima_Manfaat','Jenis Penerima Manfaat','Jenis Penerima','Jenis PM']));
+   const birthDate=date(val(r,['Tanggal_Lahir','Tanggal Lahir','Tgl Lahir']));
+   const parentName=val(r,['Nama_Orang_Tua','Nama Orang Tua','Orang Tua','Nama Wali']);
+   const rawStatus=val(r,['Status'])||'Aktif'; const status=/^aktif$/i.test(rawStatus)?'Aktif':/^tidak\s+aktif$/i.test(rawStatus)?'Tidak Aktif':rawStatus;
+   const portion=val(r,['Jenis_Porsi','Jenis Porsi','Porsi']).toLowerCase()==='besar'?'Besar':'Kecil';
+   const address=val(r,['Alamat','Address']);
+
+   if(!identity||!name||!school||!g||!pmType){
+    skip++;
+    errors.push(`Baris ${i+2}: NIS/NIK, Nama, Jenis Kelamin, Kode Sekolah, atau Jenis Penerima Manfaat tidak valid.`);
+    continue;
+   }
+
+   if(pmType==='1'){
+    const ex=oldBeneficiaries.find(x=>String(x.identityNumber||x.nisn||x.nis)===identity);
+    await put('beneficiaries',{
+     id:ex?.id||uid('PM'),identityNumber:identity,name,birthDate,genderCode:g,parentName,
+     beneficiaryType:'1',schoolId:school.id,status,portionType:portion,address,
+     createdAt:ex?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()
+    });
+    siswaOk++;
+   }else if(pmType==='2'){
+    const ex=oldTeachers.find(x=>String(x.number||x.identityNumber||'')===identity);
+    await put('teachers',{
+     id:ex?.id||uid('GRU'),number:identity,identityNumber:identity,name,birthDate,
+     genderCode:g,parentName,beneficiaryType:'2',schoolId:school.id,status,
+     portionType:portion,address,position:'Guru',mbg:'Ya',
+     createdAt:ex?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()
+    });
+    guruOk++;
+   }else{
+    const ex=oldStaff.find(x=>String(x.number||x.identityNumber||'')===identity);
+    await put('staff',{
+     id:ex?.id||uid('TEN'),number:identity,identityNumber:identity,name,birthDate,
+     genderCode:g,parentName,beneficiaryType:'3',schoolId:school.id,status,
+     portionType:portion,address,position:'Tenaga Kependidikan',mbg:'Ya',
+     createdAt:ex?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()
+    });
+    tendikOk++;
+   }
+  }
+
+  alert(
+   `Import Semua PM selesai.\n\n`+
+   `Siswa: ${siswaOk}\n`+
+   `Guru: ${guruOk}\n`+
+   `Tenaga Kependidikan: ${tendikOk}\n`+
+   `Dilewati: ${skip}`+
+   (errors.length?`\n\n${errors.slice(0,8).join('\n')}`:'')
+  );
+  toast(`Import selesai: Siswa ${siswaOk}, Guru ${guruOk}, Tendik ${tendikOk}`);
+  refresh();
+ }catch(err){
+  console.error('Import Semua PM:',err);
+  alert('Import Semua PM gagal:\n\n'+(err?.message||err));
+  toast('Import gagal');
+ }
+ event.target.value='';
+}
+
+async function backup(){
+ let data={version:1,exportedAt:new Date().toISOString(),data:{}};for(let s of stores)data.data[s]=await all(s);
+ let blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='backup-sppg-mbg-'+new Date().toISOString().slice(0,10)+'.json';a.click();URL.revokeObjectURL(a.href);toast('Backup berhasil dibuat')
+}
+async function restoreData(e){
+ let file=e.target.files[0];if(!file)return;try{let data=JSON.parse(await file.text());if(!data.data)throw Error();if(!confirm('Restore akan menambahkan/mengganti data berdasarkan ID. Lanjutkan?'))return;for(let s of stores)for(let x of (data.data[s]||[]))await put(s,x);toast('Restore berhasil');refresh()}catch(err){alert('File backup tidak valid.')}e.target.value=''
+}
+document.getElementById('modal').addEventListener('click',e=>{if(e.target.id==='modal')closeModal()});
+
+</script>
+</body>
+</html>

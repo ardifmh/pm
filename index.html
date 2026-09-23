@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SPPG MBG - Data Penerima Manfaat</title>
+<title>SPPG CIKASO - Data Penerima Manfaat</title>
 <style>
 :root{--primary:#1769aa;--primary2:#0d47a1;--bg:#f4f7fb;--card:#fff;--text:#1f2937;--muted:#6b7280;--border:#e5e7eb;--danger:#dc2626;--success:#16a34a;--warning:#d97706}
 *{box-sizing:border-box}body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--text)}
@@ -104,12 +104,27 @@ button,input,select{font:inherit}.app{display:flex;min-height:100vh}
 }
 </style>
 
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+
+
+<style id="school-pdf-style">
+.btn-pdf{background:#e8f5e9!important;color:#166534!important;border:1px solid #bbf7d0!important}
+.btn-pdf:hover{background:#dcfce7!important}
+</style>
+
+
+<style id="branding-cikaso">
+.brand-logo{font-weight:800!important;letter-spacing:-.5px}
+</style>
+
 </head>
 <body>
 <div id="loginScreen" class="login-screen">
  <div class="login-box">
-  <div class="logo" style="margin-bottom:16px">MBG</div>
-  <h2>Login SPPG MBG</h2>
+  <div class="logo" style="margin-bottom:16px">BGN</div>
+  <h2>Login SPPG CIKASO</h2>
   <p>Masuk untuk mengakses database penerima manfaat SPPG yang tersimpan di Firebase.</p>
   <div id="loginError" class="login-error"></div>
   <label style="font-size:12px;font-weight:700">Email</label>
@@ -122,7 +137,7 @@ button,input,select{font:inherit}.app{display:flex;min-height:100vh}
 </div>
 <div class="app" id="appRoot" style="display:none">
 <aside class="sidebar">
-  <div class="brand"><div class="logo">MBG</div><div><b>SPPG MBG</b><small>Data Penerima Manfaat</small></div></div>
+  <div class="brand"><div class="logo">BGN</div><div><b>SPPG CIKASO</b><small>Data Penerima Manfaat</small></div></div>
   <div class="userbar" style="margin:14px 8px 0"><span class="user-email" id="userEmail" style="color:#dbeafe"></span><button class="btn-logout" onclick="logoutFirebase()">Keluar</button></div><div class="nav">
     <div class="group">Utama</div>
     <button class="active" onclick="showPage('dashboard',this)">🏠 Dashboard</button>
@@ -608,6 +623,7 @@ async function renderSchools(){
     <td><span class="badge ${isActive(s)?'badge-active':'badge-off'}">${isActive(s)?'AKTIF':'TIDAK AKTIF'}</span></td>
     <td><div class="actions">
       <button class="btn-secondary" onclick="openModal('school','${s.id}')">Edit</button>
+      <button class="btn-success btn-pdf" onclick="downloadSchoolPDF('${s.id}')">PDF</button>
       <button class="btn-danger" onclick="remove('schools','${s.id}')">Hapus</button>
     </div></td>
    </tr>`;
@@ -617,6 +633,169 @@ async function renderSchools(){
    ['Kode','Nama Sekolah','Porsi Kecil','Porsi Besar','Jumlah','Status','Aksi'],
    rows
  );
+}
+
+
+async function downloadSchoolPDF(schoolId){
+ try{
+  if(!window.jspdf || !window.jspdf.jsPDF){
+   alert('Fitur PDF belum tersedia. Pastikan koneksi internet aktif, lalu coba lagi.');
+   return;
+  }
+
+  const [schools,students,teachers,staff]=await Promise.all([
+   all('schools'),all('beneficiaries'),all('teachers'),all('staff')
+  ]);
+
+  const school=schools.find(x=>x.id===schoolId);
+  if(!school){alert('Data sekolah tidak ditemukan.');return;}
+
+  const isActive=x=>String(x?.status||'').trim().toLowerCase()==='aktif';
+  const portion=x=>String(x?.portionType||x?.jenisPorsi||x?.portion||'').trim();
+  const gender=x=>{
+   const g=String(x?.genderCode||x?.gender||'');
+   return g==='64'?'Perempuan':g==='392'?'Laki-laki':(x?.gender||'-');
+  };
+  const pmType=x=>{
+   const t=String(x?.beneficiaryType||'');
+   return t==='1'?'Siswa':t==='2'?'Guru':t==='3'?'Tenaga Kependidikan':(x?.beneficiaryType||'-');
+  };
+
+  const schoolStudents=students.filter(x=>x.schoolId===schoolId);
+  const schoolTeachers=teachers.filter(x=>x.schoolId===schoolId);
+  const schoolStaff=staff.filter(x=>x.schoolId===schoolId);
+  const activeAll=[...schoolStudents,...schoolTeachers,...schoolStaff].filter(isActive);
+  const kecil=activeAll.filter(x=>portion(x).toLowerCase()==='kecil').length;
+  const besar=activeAll.filter(x=>portion(x).toLowerCase()==='besar').length;
+
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});
+  const pageW=doc.internal.pageSize.getWidth();
+
+  // Header.
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(18);
+  doc.text('SPPG CIKASO',14,14);
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(10);
+  doc.text('BGN - Badan Gizi Nasional',14,20);
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(14);
+  doc.text('DETAIL DATA SEKOLAH',14,27);
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(9);
+  doc.text('Dicetak: '+new Date().toLocaleString('id-ID'),pageW-14,14,{align:'right'});
+
+  // School master detail.
+  doc.setFontSize(11);
+  doc.setFont('helvetica','bold');
+  doc.text('Identitas Sekolah',14,36);
+
+  const info=[
+   ['Kode Sekolah',school.code||'-','NPSN',school.npsn||'-'],
+   ['Nama Sekolah',school.name||'-','Jenjang',school.level||'-'],
+   ['Status',school.status||'-','Kepala Sekolah',school.head||'-'],
+   ['No. Kontak',school.phone||'-','Alamat',school.address||'-']
+  ];
+
+  doc.autoTable({
+   startY:39,
+   head:[],
+   body:info,
+   theme:'grid',
+   styles:{fontSize:9,cellPadding:2.5},
+   columnStyles:{
+    0:{fontStyle:'bold',cellWidth:35},
+    1:{cellWidth:80},
+    2:{fontStyle:'bold',cellWidth:35},
+    3:{cellWidth:105}
+   },
+   margin:{left:14,right:14}
+  });
+
+  let y=doc.lastAutoTable.finalY+7;
+
+  // Summary.
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(11);
+  doc.text('Ringkasan Porsi PM Aktif',14,y);
+  doc.autoTable({
+   startY:y+3,
+   head:[['Siswa','Guru','Tendik','Porsi Kecil','Porsi Besar','Jumlah PM']],
+   body:[[
+    schoolStudents.filter(isActive).length,
+    schoolTeachers.filter(isActive).length,
+    schoolStaff.filter(isActive).length,
+    kecil,besar,activeAll.length
+   ]],
+   theme:'grid',
+   styles:{fontSize:9,cellPadding:2.5,halign:'center'},
+   headStyles:{fontStyle:'bold'},
+   margin:{left:14,right:14}
+  });
+  y=doc.lastAutoTable.finalY+7;
+
+  function addTable(title,head,body){
+   if(y>175){
+    doc.addPage();
+    y=15;
+   }
+   doc.setFont('helvetica','bold');
+   doc.setFontSize(11);
+   doc.text(title,14,y);
+   doc.autoTable({
+    startY:y+3,
+    head:[head],
+    body:body.length?body:[['-','Tidak ada data','-','-','-','-','-','-']],
+    theme:'grid',
+    styles:{fontSize:8,cellPadding:2,overflow:'linebreak'},
+    headStyles:{fontStyle:'bold'},
+    margin:{left:14,right:14},
+    didDrawPage:function(data){
+      doc.setFontSize(8);
+      doc.setFont('helvetica','normal');
+      doc.text('SPPG CIKASO - Detail Sekolah',14,doc.internal.pageSize.getHeight()-7);
+      doc.text('Halaman '+doc.internal.getNumberOfPages(),pageW-14,doc.internal.pageSize.getHeight()-7,{align:'right'});
+    }
+   });
+   y=doc.lastAutoTable.finalY+7;
+  }
+
+  addTable('Daftar Siswa',[
+   'NO','NIS / NIK','Nama','Tanggal Lahir','JK','Orang Tua/Wali','Status','Porsi'
+  ],schoolStudents.map((x,i)=>[
+   i+1,x.identityNumber||x.nisn||x.nis||'-',x.name||'-',
+   formatDateDisplay(x.birthDate),gender(x),x.parentName||'-',
+   x.status||'-',portion(x)||'-'
+  ]));
+
+  addTable('Daftar Guru',[
+   'NO','NIS / NIK','Nama','Tanggal Lahir','JK','Orang Tua/Wali','Status','Porsi'
+  ],schoolTeachers.map((x,i)=>[
+   i+1,x.identityNumber||x.number||'-',x.name||'-',
+   formatDateDisplay(x.birthDate),gender(x),x.parentName||'-',
+   x.status||'-',portion(x)||'-'
+  ]));
+
+  addTable('Daftar Tenaga Kependidikan',[
+   'NO','NIS / NIK','Nama','Tanggal Lahir','JK','Orang Tua/Wali','Status','Porsi'
+  ],schoolStaff.map((x,i)=>[
+   i+1,x.identityNumber||x.number||'-',x.name||'-',
+   formatDateDisplay(x.birthDate),gender(x),x.parentName||'-',
+   x.status||'-',portion(x)||'-'
+  ]));
+
+  const safeName=String(school.name||'sekolah')
+    .replace(/[\\/:*?"<>|]+/g,' ')
+    .replace(/\s+/g,' ')
+    .trim()
+    .substring(0,80);
+
+  doc.save(`Detail-${safeName}.pdf`);
+ }catch(err){
+  console.error('PDF sekolah:',err);
+  alert('Gagal membuat PDF sekolah:\\n\\n'+(err?.message||err));
+ }
 }
 
 async function renderStudents(){
@@ -1224,5 +1403,18 @@ async function restoreData(e){
 document.getElementById('modal').addEventListener('click',e=>{if(e.target.id==='modal')closeModal()});
 
 </script>
+
+<script id="branding-fallback">
+document.addEventListener('DOMContentLoaded',function(){
+  document.querySelectorAll('*').forEach(function(el){
+    if(el.children.length===0){
+      const t=(el.textContent||'').trim();
+      if(t==='MBG') el.textContent='BGN';
+      else if(t==='SPPG MBG') el.textContent='SPPG CIKASO';
+    }
+  });
+});
+</script>
+
 </body>
 </html>

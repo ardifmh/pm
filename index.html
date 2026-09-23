@@ -59,6 +59,51 @@ button,input,select{font:inherit}.app{display:flex;min-height:100vh}
 .stat-card{min-height:98px;}
 </style>
 
+
+<style id="rekap-style">
+.rekap-card{padding:14px;overflow:auto}
+.rekap-title{
+ text-align:center;font-size:18px;font-weight:800;
+ padding:8px;background:#d9e8f7;border:1px solid #111;
+ margin-bottom:12px
+}
+.rekap-section-title{
+ font-size:16px;font-weight:800;margin:18px 0 8px;
+ padding:8px 10px;background:#1f6fb2;color:#fff;border-radius:4px
+}
+.rekap-group{margin:0 0 16px;break-inside:avoid}
+.rekap-table{width:100%;border-collapse:collapse;min-width:620px;background:#fff}
+.rekap-table th,.rekap-table td{
+ border:1px solid #222;padding:5px 8px;font-size:13px
+}
+.rekap-table thead tr:first-child th{
+ background:#2b75b5;color:#fff;text-align:center;font-weight:800
+}
+.rekap-table thead tr:nth-child(2) th{
+ background:#eaf2f9;color:#111;font-weight:800;text-align:center
+}
+.rekap-table .no-col{width:48px}
+.rekap-table td.center{text-align:center}
+.rekap-table td.num-cell{text-align:center;font-weight:700;width:90px}
+.rekap-table td.total-cell{font-weight:800;background:#fff4c2}
+.rekap-table tr.subtotal td{
+ background:#fff4c2;font-weight:800
+}
+.rekap-table tr.subtotal td.num-cell{background:#fff4c2}
+.empty-rekap{
+ padding:18px;border:1px dashed #94a3b8;text-align:center;color:#64748b
+}
+.date-rekap{display:flex;align-items:center;gap:8px;font-size:12px;color:#475569}
+.date-rekap input{padding:9px 10px;border:1px solid #cbd5e1;border-radius:8px}
+@media print{
+ .sidebar,.top .actions,.nav,.userbar{display:none!important}
+ .main{margin:0!important;padding:0!important}
+ .page:not(#rekap){display:none!important}
+ #rekap{display:block!important}
+ .rekap-card{box-shadow:none;border:0}
+}
+</style>
+
 </head>
 <body>
 <div id="loginScreen" class="login-screen">
@@ -87,6 +132,8 @@ button,input,select{font:inherit}.app{display:flex;min-height:100vh}
     <button onclick="showPage('teachers',this)">👨‍🏫 Guru</button>
     <button onclick="showPage('staff',this)">🧑‍💼 Tenaga Kependidikan</button>
     <button onclick="showPage('posyandu',this)">👶 B3 / Posyandu</button>
+    <div class="group">Laporan</div>
+    <button onclick="showPage('rekap',this)">📊 Rekap</button>
     <div class="group">Sistem</div>
     <button onclick="backup()">⬇️ Backup Data</button>
     <button onclick="restoreInput.click()">⬆️ Restore Data</button>
@@ -190,6 +237,29 @@ button,input,select{font:inherit}.app{display:flex;min-height:100vh}
   <div id="posMasterTable"></div>
  </div>
 </section>
+
+<section id="rekap" class="page">
+ <div class="top">
+  <div>
+   <h1>Rekap Porsi</h1>
+   <p>Rekap penerima manfaat per sekolah dan Posyandu berdasarkan data PM aktif.</p>
+  </div>
+  <div class="actions">
+   <label class="date-rekap">
+    <span>Tanggal Rekap</span>
+    <input id="rekapDate" type="date" onchange="renderRekap()">
+   </label>
+   <button class="btn btn-secondary" onclick="window.print()">🖨️ Cetak</button>
+  </div>
+ </div>
+
+ <div class="card rekap-card">
+  <div class="rekap-title" id="rekapDateTitle">Tanggal Rekap</div>
+  <div id="rekapSekolah"></div>
+  <div id="rekapPosyandu"></div>
+ </div>
+</section>
+
 </main>
 </div>
 
@@ -810,7 +880,175 @@ async function repairPosyanduRecipientData(){
   }
  }catch(err){console.error('Repair Posyandu:',err)}
 }
-async function refresh(){await repairPosyanduRecipientData();await fillSchoolFilters();await dashboard();if(document.getElementById('schools').classList.contains('active'))renderSchools();if(document.getElementById('students')?.classList.contains('active'))renderStudents();if(document.getElementById('teachers').classList.contains('active'))renderTeachers();if(document.getElementById('staff').classList.contains('active'))renderStaff();if(document.getElementById('posyandu').classList.contains('active')){renderPosyandu();renderPosyanduRecipients()}}
+
+function setDefaultRekapDate(){
+ const el=document.getElementById('rekapDate');
+ if(el && !el.value) el.value=new Date().toISOString().slice(0,10);
+}
+
+function rekapDateDisplay(value){
+ if(!value)return '-';
+ const d=new Date(value+'T00:00:00');
+ const dd=String(d.getDate()).padStart(2,'0');
+ const mm=String(d.getMonth()+1).padStart(2,'0');
+ const yy=d.getFullYear();
+ return `${dd}-${mm}-${yy}`;
+}
+
+function portionCounts(records){
+ const isActive=x=>String(x?.status||'').trim().toLowerCase()==='aktif';
+ const portion=x=>String(x?.portionType||x?.jenisPorsi||x?.portion||'').trim().toLowerCase();
+ const active=records.filter(isActive);
+ return {
+   kecil:active.filter(x=>portion(x)==='kecil').length,
+   besar:active.filter(x=>portion(x)==='besar').length
+ };
+}
+
+function rekapSchoolGroup(level){
+ const z=String(level||'').trim().toUpperCase();
+ if(z==='SD') return 'SD';
+ if(z==='SMP') return 'SMP';
+ if(z==='SMA'||z==='SMK') return 'SMA/SMK';
+ if(['TK','PAUD','RA','KOBER'].includes(z)) return 'TK/PAUD/RA/KOBER';
+ if(['SLB','SIB'].includes(z)) return 'SIB';
+ return 'LAINNYA';
+}
+
+async function renderRekap(){
+ setDefaultRekapDate();
+
+ const dateEl=document.getElementById('rekapDate');
+ const dateTitle=document.getElementById('rekapDateTitle');
+ if(dateTitle)dateTitle.textContent='Tanggal '+rekapDateDisplay(dateEl?.value);
+
+ const [schools,students,teachers,staff,posyandu,posRecipients]=await Promise.all([
+   all('schools'),all('beneficiaries'),all('teachers'),all('staff'),
+   all('posyandu'),all('posyandu_recipients')
+ ]);
+
+ const isActive=x=>String(x?.status||'').trim().toLowerCase()==='aktif';
+
+ // Semua PM sekolah aktif.
+ const schoolPM=[...students,...teachers,...staff];
+
+ // Kelompokkan sekolah sesuai format laporan.
+ const groups={
+   'SD':[], 'SMP':[], 'SMA/SMK':[],
+   'TK/PAUD/RA/KOBER':[], 'SIB':[], 'LAINNYA':[]
+ };
+
+ schools.filter(isActive).forEach(s=>{
+   const records=schoolPM.filter(x=>x.schoolId===s.id);
+   const c=portionCounts(records);
+   groups[rekapSchoolGroup(s.level)].push({
+     school:s,kecil:c.kecil,besar:c.besar,total:c.kecil+c.besar
+   });
+ });
+
+ let schoolHtml='';
+ Object.entries(groups).forEach(([group,items])=>{
+   if(!items.length)return;
+
+   let groupK=0,groupB=0;
+   const rows=items.map((item,i)=>{
+     groupK+=item.kecil; groupB+=item.besar;
+     return `<tr>
+       <td class="center">${i+1}</td>
+       <td>${esc(item.school.name||'-')}</td>
+       <td class="num-cell">${item.kecil}</td>
+       <td class="num-cell">${item.besar}</td>
+       <td class="num-cell total-cell">${item.total}</td>
+     </tr>`;
+   }).join('');
+
+   schoolHtml+=`
+    <div class="rekap-group">
+      <table class="rekap-table">
+       <thead>
+        <tr><th colspan="5">${esc(group)}</th></tr>
+        <tr>
+         <th class="no-col">NO</th>
+         <th>${esc(group)}</th>
+         <th>PK</th>
+         <th>PB</th>
+         <th>Jumlah</th>
+        </tr>
+       </thead>
+       <tbody>
+        ${rows}
+        <tr class="subtotal">
+         <td></td><td>Jumlah</td>
+         <td class="num-cell">${groupK}</td>
+         <td class="num-cell">${groupB}</td>
+         <td class="num-cell">${groupK+groupB}</td>
+        </tr>
+       </tbody>
+      </table>
+    </div>`;
+ });
+
+ // Rekap Posyandu di bagian bawah, dipisahkan berdasarkan Desa.
+ const villageMap={};
+ posyandu.filter(isActive).forEach(p=>{
+   const village=String(p.village||p.desa||p.addressVillage||'Desa Tidak Diisi').trim()||'Desa Tidak Diisi';
+   if(!villageMap[village])villageMap[village]=[];
+   villageMap[village].push(p);
+ });
+
+ let posHtml='';
+ const villageNames=Object.keys(villageMap).sort((a,b)=>a.localeCompare(b));
+ villageNames.forEach(village=>{
+   let vk=0,vb=0;
+   const rows=villageMap[village].map((p,i)=>{
+     const records=posRecipients.filter(x=>x.posyanduId===p.id);
+     const c=portionCounts(records);
+     vk+=c.kecil; vb+=c.besar;
+     return `<tr>
+       <td class="center">${i+1}</td>
+       <td>${esc(p.name||'-')}</td>
+       <td class="num-cell">${c.kecil}</td>
+       <td class="num-cell">${c.besar}</td>
+       <td class="num-cell total-cell">${c.kecil+c.besar}</td>
+     </tr>`;
+   }).join('');
+
+   posHtml+=`
+    <div class="rekap-group">
+     <table class="rekap-table">
+      <thead>
+       <tr><th colspan="5">DESA ${esc(village)}</th></tr>
+       <tr>
+        <th class="no-col">NO</th>
+        <th>POSYANDU</th>
+        <th>PK</th>
+        <th>PB</th>
+        <th>Jumlah</th>
+       </tr>
+      </thead>
+      <tbody>
+       ${rows}
+       <tr class="subtotal">
+        <td></td><td>Jumlah</td>
+        <td class="num-cell">${vk}</td>
+        <td class="num-cell">${vb}</td>
+        <td class="num-cell">${vk+vb}</td>
+       </tr>
+      </tbody>
+     </table>
+    </div>`;
+ });
+
+ document.getElementById('rekapSekolah').innerHTML=
+   `<div class="rekap-section-title">REKAP SEKOLAH</div>${schoolHtml||'<div class="empty-rekap">Belum ada data sekolah aktif.</div>'}`;
+
+ document.getElementById('rekapPosyandu').innerHTML=
+   `<div class="rekap-section-title">REKAP POSYANDU PER DESA</div>${posHtml||'<div class="empty-rekap">Belum ada data Posyandu aktif.</div>'}`;
+}
+
+async function refresh(){await repairPosyanduRecipientData();await fillSchoolFilters();await dashboard();if(document.getElementById('schools').classList.contains('active'))renderSchools();if(document.getElementById('students')?.classList.contains('active'))renderStudents();if(document.getElementById('teachers').classList.contains('active'))renderTeachers();if(document.getElementById('staff').classList.contains('active'))renderStaff();if(document.getElementById('posyandu').classList.contains('active')){renderPosyandu();renderPosyanduRecipients()}if(document.getElementById('rekap')?.classList.contains('active'))renderRekap()}
+
+setTimeout(setDefaultRekapDate,0);
 
 function downloadStudentTemplate(){
  if(typeof XLSX==='undefined'){alert('Fitur Excel membutuhkan koneksi internet saat pertama kali digunakan.');return}

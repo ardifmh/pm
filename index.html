@@ -119,6 +119,18 @@ button,input,select{font:inherit}.app{display:flex;min-height:100vh}
 .brand-logo{font-weight:800!important;letter-spacing:-.5px}
 </style>
 
+
+<style id="dashboard-all-schools">
+#dashboardSchools{
+  max-height:650px;
+  overflow-y:auto;
+}
+#dashboardSchools table{width:100%}
+#dashboardSchools th:first-child,#dashboardSchools td:first-child{
+  width:55px;text-align:center;
+}
+</style>
+
 </head>
 <body>
 <div id="loginScreen" class="login-screen">
@@ -1033,9 +1045,10 @@ async function dashboard(){
    document.getElementById('statPMTotal').textContent=totalPMKeseluruhan;
  }
 
- let rows=activeSchools.slice(0,10).map(x=>`<tr>
+ let rows=activeSchools.map((x,i)=>`<tr>
+   <td class="center">${i+1}</td>
    <td>${esc(x.code||'-')}</td>
-   <td>${esc(x.name||'-')}</td>
+   <td><b>${esc(x.name||'-')}</b></td>
    <td>${esc(x.level||'-')}</td>
    <td>${activeStudents.filter(a=>a.schoolId===x.id).length}</td>
    <td>${activeTeachers.filter(a=>a.schoolId===x.id).length}</td>
@@ -1044,7 +1057,7 @@ async function dashboard(){
 
  const dashTable=document.getElementById('dashboardSchools');
  if(dashTable){
-   dashTable.innerHTML=table(['Kode','Sekolah','Jenjang','Siswa','Guru','Tendik'],rows);
+   dashTable.innerHTML=table(['No','Kode','Sekolah','Jenjang','Siswa','Guru','Tendik'],rows);
  }
 }
 

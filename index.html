@@ -382,7 +382,7 @@ function fields(type,data={}){
   <div class="field"><label>Jenjang</label><select name="level"><option>PAUD</option><option>TK</option><option>SD</option><option>SMP</option><option>SMA</option><option>SMK</option><option>SLB</option><option>Lainnya</option></select></div>
   <div class="field"><label>Status</label><select name="status"><option>Aktif</option><option>Tidak Aktif</option></select></div>
   <div class="field full"><label>Alamat</label><textarea name="address" rows="2">${esc(data.address||'')}</textarea></div>
-  <div class="field"><label>Kepala Sekolah</label><input name="head" value="${esc(data.head||'')}"></div>
+  <div class="field"><label>PIC</label><input name="head" value="${esc(data.head||'')}"></div>
   <div class="field"><label>No. Kontak</label><input name="phone" value="${esc(data.phone||'')}"></div>`;
  if(type==='student')return `
   <div class="field"><label>NIS / NIK</label><input name="identityNumber" value="${esc(data.identityNumber||data.nisn||data.nis||'')}" required placeholder="NIS atau NIK"></div>
@@ -793,7 +793,7 @@ async function downloadSchoolPDF(schoolId){
   const info=[
    ['Kode Sekolah',school.code||'-','NPSN',school.npsn||'-'],
    ['Nama Sekolah',school.name||'-','Jenjang',school.level||'-'],
-   ['Status',school.status||'-','Kepala Sekolah',school.head||'-'],
+   ['Status',school.status||'-','PIC',school.head||'-'],
    ['No. Kontak',school.phone||'-','Alamat',school.address||'-']
   ];
 

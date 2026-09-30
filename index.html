@@ -682,16 +682,21 @@ async function downloadAllSchoolsPDF(){
    const siswaP=ss.filter(x=>String(x?.genderCode||x?.gender||'')==='64').length;
    const guru=tt.length;
    const tendik=st.length;
+   const allRecipients=[...ss,...tt,...st];
+   const pk=allRecipients.filter(x=>portion(x)==='kecil').length;
+   const pb=allRecipients.filter(x=>portion(x)==='besar').length;
    const jumlah=siswaL+siswaP+guru+tendik;
-   return [i+1, school.name||'-', school.npsn||'-', school.head||'-', school.phone||'-', siswaL, siswaP, guru, tendik, jumlah];
+   return [i+1, school.name||'-', school.address||'-', school.npsn||'-', school.head||school.pic||'-', school.phone||'-', siswaL, siswaP, guru, tendik, pk, pb, jumlah];
   });
 
-  const total=rows.reduce((n,r)=>n+(Number(r[9])||0),0);
-  const totalL=rows.reduce((n,r)=>n+(Number(r[5])||0),0);
-  const totalP=rows.reduce((n,r)=>n+(Number(r[6])||0),0);
-  const totalGuru=rows.reduce((n,r)=>n+(Number(r[7])||0),0);
-  const totalTendik=rows.reduce((n,r)=>n+(Number(r[8])||0),0);
-  rows.push(['','TOTAL','','','',totalL,totalP,totalGuru,totalTendik,total]);
+  const total=rows.reduce((n,r)=>n+(Number(r[12])||0),0);
+  const totalL=rows.reduce((n,r)=>n+(Number(r[6])||0),0);
+  const totalP=rows.reduce((n,r)=>n+(Number(r[7])||0),0);
+  const totalGuru=rows.reduce((n,r)=>n+(Number(r[8])||0),0);
+  const totalTendik=rows.reduce((n,r)=>n+(Number(r[9])||0),0);
+  const totalPK=rows.reduce((n,r)=>n+(Number(r[10])||0),0);
+  const totalPB=rows.reduce((n,r)=>n+(Number(r[11])||0),0);
+  rows.push(['','TOTAL','','','','',totalL,totalP,totalGuru,totalTendik,totalPK,totalPB,total]);
 
   const {jsPDF}=window.jspdf;
   const doc=new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});
@@ -713,12 +718,12 @@ async function downloadAllSchoolsPDF(){
 
   doc.autoTable({
    startY:41,
-   head:[['No','Nama Sekolah','NPSN','PIC','No Kontak','Siswa Laki-laki','Siswa Perempuan','Guru','Tendik','Jumlah']],
+   head:[['No','Nama Sekolah','Alamat','NPSN','PIC','No Kontak','Siswa Laki-laki','Siswa Perempuan','Guru','Tendik','PK','PB','Jumlah']],
    body:rows,
    theme:'grid',
    styles:{fontSize:8,cellPadding:2.2,halign:'center',valign:'middle'},
    headStyles:{fontStyle:'bold',halign:'center'},
-   columnStyles:{0:{cellWidth:10},1:{halign:'left',cellWidth:52},2:{cellWidth:23},3:{halign:'left',cellWidth:34},4:{cellWidth:30},5:{cellWidth:22},6:{cellWidth:22},7:{cellWidth:16},8:{cellWidth:16},9:{cellWidth:18}},
+   columnStyles:{0:{cellWidth:8},1:{halign:'left',cellWidth:38},2:{halign:'left',cellWidth:45},3:{cellWidth:20},4:{halign:'left',cellWidth:28},5:{cellWidth:25},6:{cellWidth:18},7:{cellWidth:18},8:{cellWidth:14},9:{cellWidth:14},10:{cellWidth:12},11:{cellWidth:12},12:{cellWidth:16}},
    didParseCell:function(data){
     if(data.row.index===rows.length-1){data.cell.styles.fontStyle='bold';}
    },

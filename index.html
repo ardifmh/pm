@@ -1254,11 +1254,17 @@ async function dashboard(){
  statStaff.textContent=activeStaff.length;
  statPosyandu.textContent=activePosyandu.length;
 
- // PM sekolah = siswa + guru + tendik aktif.
- const totalPMSekolah=activeStudents.length+activeTeachers.length+activeStaff.length;
+ // PM sekolah hanya dihitung jika PM dan sekolah induknya sama-sama aktif.
+ const activeSchoolIds=new Set(activeSchools.map(x=>x.id));
+ const activeSchoolStudents=activeStudents.filter(x=>activeSchoolIds.has(x.schoolId));
+ const activeSchoolTeachers=activeTeachers.filter(x=>activeSchoolIds.has(x.schoolId));
+ const activeSchoolStaff=activeStaff.filter(x=>activeSchoolIds.has(x.schoolId));
+ const totalPMSekolah=activeSchoolStudents.length+activeSchoolTeachers.length+activeSchoolStaff.length;
 
- // PM Posyandu = Balita + Bumil + Busui aktif.
- const totalPMPosyandu=activePosRecipients.length;
+ // PM Posyandu hanya dihitung jika PM dan Posyandu induknya sama-sama aktif.
+ const activePosyanduIds=new Set(activePosyandu.map(x=>x.id));
+ const activePosRecipientsValid=activePosRecipients.filter(x=>activePosyanduIds.has(x.posyanduId));
+ const totalPMPosyandu=activePosRecipientsValid.length;
 
  // Total PM keseluruhan.
  const totalPMKeseluruhan=totalPMSekolah+totalPMPosyandu;
@@ -1278,9 +1284,9 @@ async function dashboard(){
    <td>${esc(x.code||'-')}</td>
    <td><b>${esc(x.name||'-')}</b></td>
    <td>${esc(x.level||'-')}</td>
-   <td>${activeStudents.filter(a=>a.schoolId===x.id).length}</td>
-   <td>${activeTeachers.filter(a=>a.schoolId===x.id).length}</td>
-   <td>${activeStaff.filter(a=>a.schoolId===x.id).length}</td>
+   <td>${activeSchoolStudents.filter(a=>a.schoolId===x.id).length}</td>
+   <td>${activeSchoolTeachers.filter(a=>a.schoolId===x.id).length}</td>
+   <td>${activeSchoolStaff.filter(a=>a.schoolId===x.id).length}</td>
  </tr>`);
 
  const dashTable=document.getElementById('dashboardSchools');

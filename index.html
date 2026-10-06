@@ -1290,19 +1290,68 @@ async function dashboard(){
    document.getElementById('statPMTotal').textContent=totalPMKeseluruhan;
  }
 
- let rows=activeSchools.map((x,i)=>`<tr>
-   <td class="center">${i+1}</td>
-   <td>${esc(x.code||'-')}</td>
-   <td><b>${esc(x.name||'-')}</b></td>
-   <td>${esc(x.level||'-')}</td>
-   <td>${activeSchoolStudents.filter(a=>a.schoolId===x.id).length}</td>
-   <td>${activeSchoolTeachers.filter(a=>a.schoolId===x.id).length}</td>
-   <td>${activeSchoolStaff.filter(a=>a.schoolId===x.id).length}</td>
+ const portionOf=x=>String(x?.portionType||x?.jenisPorsi||x?.portion||'').trim().toLowerCase();
+ const studentRowsBySchool=new Map();
+ activeSchoolStudents.forEach(x=>{
+   if(!activeSchoolIds.has(x.schoolId)) return;
+   if(!studentRowsBySchool.has(x.schoolId)) studentRowsBySchool.set(x.schoolId,[]);
+   studentRowsBySchool.get(x.schoolId).push(x);
+ });
+
+ let rows=activeSchools.map((x,i)=>{
+   const students=studentRowsBySchool.get(x.id)||[];
+   const pk=students.filter(a=>portionOf(a)==='kecil').length;
+   const pb=students.filter(a=>portionOf(a)==='besar').length;
+   return `<tr>
+     <td class="center">${i+1}</td>
+     <td>${esc(x.code||'-')}</td>
+     <td><b>${esc(x.name||'-')}</b></td>
+     <td>${esc(x.level||'-')}</td>
+     <td>${students.length}</td>
+     <td>${pk}</td>
+     <td>${pb}</td>
+     <td>${activeSchoolTeachers.filter(a=>a.schoolId===x.id).length}</td>
+     <td>${activeSchoolStaff.filter(a=>a.schoolId===x.id).length}</td>
+   </tr>`;
+ });
+
+ // Rekap jenjang hanya untuk siswa aktif pada sekolah aktif.
+ const schoolGroup=x=>{
+   const v=String((x?.level||'')+' '+(x?.name||'')).toUpperCase();
+   if(/\b(RA|TK|KB|KOBER|PAUD)\b/.test(v)) return 'RA/TK/KB/KOBER/PAUD';
+   if(/\b(SD|MI)\b/.test(v)) return 'SD/MI';
+   if(/\b(SMP|MTS|MTs)\b/.test(v)) return 'SMP/MTs Sederajat';
+   if(/\b(SMA|SMK|MA)\b/.test(v)) return 'SMA/SMK';
+   return 'Lainnya';
+ };
+ const groupOrder=['RA/TK/KB/KOBER/PAUD','SD/MI','SMP/MTs Sederajat','SMA/SMK'];
+ const groupMap={};
+ groupOrder.forEach(g=>groupMap[g]={pk:0,pb:0,total:0});
+ activeSchoolStudents.forEach(stu=>{
+   const school=activeSchools.find(x=>x.id===stu.schoolId);
+   if(!school) return;
+   const g=schoolGroup(school);
+   if(!groupMap[g]) groupMap[g]={pk:0,pb:0,total:0};
+   const pt=portionOf(stu);
+   if(pt==='kecil') groupMap[g].pk++;
+   if(pt==='besar') groupMap[g].pb++;
+   groupMap[g].total++;
+ });
+ const groupRows=groupOrder.map((g,i)=>`<tr>
+   <td class="center">${i+1}</td><td><b>${esc(g)}</b></td><td>${groupMap[g].pk}</td><td>${groupMap[g].pb}</td><td><b>${groupMap[g].total}</b></td>
  </tr>`);
+ const groupTable=`<div style="margin-top:16px"><h3 style="margin:0 0 8px">Total Siswa per Jenjang</h3>${table(['No','Jenjang','Porsi Kecil','Porsi Besar','Jumlah Siswa'],groupRows)}</div>`;
+
+ // Total guru dan tendik aktif dari sekolah aktif.
+ const totalGuruAktif=activeSchoolTeachers.length;
+ const totalTendikAktif=activeSchoolStaff.length;
+ const totalGuruTendik=totalGuruAktif+totalTendikAktif;
+ const guruTendikRow='<tr><td><b>'+totalGuruAktif+'</b></td><td><b>'+totalTendikAktif+'</b></td><td><b>'+totalGuruTendik+'</b></td></tr>';
+ const guruTendikTable=`<div style="margin-top:16px"><h3 style="margin:0 0 8px">Total Guru dan Tendik</h3>${table(['Guru Aktif','Tendik Aktif','Jumlah Guru + Tendik'],[guruTendikRow])}</div>`;
 
  const dashTable=document.getElementById('dashboardSchools');
  if(dashTable){
-   dashTable.innerHTML=table(['No','Kode','Sekolah','Jenjang','Siswa','Guru','Tendik'],rows);
+   dashTable.innerHTML=table(['No','Kode','Sekolah','Jenjang','Siswa','PK Siswa','PB Siswa','Guru','Tendik'],rows)+groupTable+guruTendikTable;
  }
 
  // Ringkasan Posyandu: hanya Posyandu aktif dan penerima aktif pada Posyandu tersebut.

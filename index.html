@@ -171,6 +171,7 @@ button,input,select{font:inherit}.app{display:flex;min-height:100vh}
     <button onclick="showPage('posyandu',this)">👶 B3 / Posyandu</button>
     <div class="group">Laporan</div>
     <button onclick="showPage('rekap',this)">📊 Rekap</button>
+    <button onclick="showPage('riwayatPM',this)">🕘 Riwayat Input PM</button>
     <div class="group">Sistem</div>
     <button onclick="backup()">⬇️ Backup Data</button>
     <button onclick="restoreInput.click()">⬆️ Restore Data</button>
@@ -272,6 +273,23 @@ button,input,select{font:inherit}.app{display:flex;min-height:100vh}
    <input id="posMasterSearch" placeholder="Cari kode/nama/lokasi..." oninput="renderPosyandu()">
   </div>
   <div id="posMasterTable"></div>
+ </div>
+</section>
+
+<section id="riwayatPM" class="page">
+ <div class="top">
+  <div><h1>Riwayat Input Data PM</h1><p>Menampilkan seluruh data penerima manfaat sekolah dan Posyandu berdasarkan perubahan/input terbaru.</p></div>
+ </div>
+ <div class="card table-card">
+  <div class="toolbar">
+   <input id="historyPMSearch" placeholder="Cari nama, NIS/NIK, sekolah atau Posyandu..." oninput="renderPMHistory()">
+   <select id="historyPMType" onchange="renderPMHistory()">
+    <option value="">Semua jenis PM</option><option value="Siswa">Siswa</option><option value="Guru">Guru</option><option value="Tenaga Kependidikan">Tenaga Kependidikan</option><option value="Balita">Balita</option><option value="Bumil">Bumil</option><option value="Busui">Busui</option>
+   </select>
+   <select id="historyPMPageSize" onchange="historyPMPage=1;renderPMHistory()"><option value="20">20 baris</option><option value="50">50 baris</option><option value="100">100 baris</option></select>
+  </div>
+  <div id="pmHistoryTable"></div>
+  <div id="pmHistoryPagination" class="pagination-wrap"></div>
  </div>
 </section>
 
@@ -1448,7 +1466,82 @@ async function renderRekap(){
    `<div class="rekap-section-title">REKAP POSYANDU PER DESA</div>${posHtml||'<div class="empty-rekap">Belum ada data Posyandu aktif.</div>'}`;
 }
 
-async function refresh(){await repairPosyanduRecipientData();await fillSchoolFilters();await dashboard();if(document.getElementById('schools').classList.contains('active'))renderSchools();if(document.getElementById('students')?.classList.contains('active'))renderStudents();if(document.getElementById('teachers').classList.contains('active'))renderTeachers();if(document.getElementById('staff').classList.contains('active'))renderStaff();if(document.getElementById('posyandu').classList.contains('active')){renderPosyandu();renderPosyanduRecipients()}if(document.getElementById('rekap')?.classList.contains('active'))renderRekap()}
+let historyPMPage=1;
+function resetPMHistoryPage(){historyPMPage=1;}
+function formatDateTimeID(v){
+ if(!v)return '-';
+ const d=new Date(v);
+ if(Number.isNaN(d.getTime()))return String(v);
+ return d.toLocaleString('id-ID',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+}
+async function renderPMHistory(){
+ try{
+  const [beneficiaries,teachers,staff,posRecipients,schools,posyandu]=await Promise.all([
+   all('beneficiaries'),all('teachers'),all('staff'),all('posyandu_recipients'),all('schools'),all('posyandu')
+  ]);
+  const schoolMap=new Map(schools.map(x=>[x.id,x]));
+  const posMap=new Map(posyandu.map(x=>[x.id,x]));
+  const rows=[];
+  const genderText=x=>String(x?.genderCode||x?.gender||'')==='392'?'Laki-laki':String(x?.genderCode||x?.gender||'')==='64'?'Perempuan':(x?.gender||'-');
+  const typeText=x=>String(x?.beneficiaryType||'')==='1'?'Siswa':String(x?.beneficiaryType||'')==='2'?'Guru':String(x?.beneficiaryType||'')==='3'?'Tenaga Kependidikan':(x?.beneficiaryType||'-');
+  beneficiaries.forEach(x=>rows.push({
+   ...x, source:'Sekolah', pmType:typeText(x), location:schoolMap.get(x.schoolId)?.name||'-',
+   identity:x.identityNumber||x.nisn||x.nis||'-', gender:genderText(x),
+   changedAt:x.updatedAt||x.createdAt||''
+  }));
+  teachers.forEach(x=>rows.push({
+   ...x, source:'Sekolah', pmType:'Guru', location:schoolMap.get(x.schoolId)?.name||'-',
+   identity:x.number||x.identityNumber||'-', gender:genderText(x),
+   changedAt:x.updatedAt||x.createdAt||''
+  }));
+  staff.forEach(x=>rows.push({
+   ...x, source:'Sekolah', pmType:'Tenaga Kependidikan', location:schoolMap.get(x.schoolId)?.name||'-',
+   identity:x.number||x.identityNumber||'-', gender:genderText(x),
+   changedAt:x.updatedAt||x.createdAt||''
+  }));
+  posRecipients.forEach(x=>rows.push({
+   ...x, source:'Posyandu', pmType:String(x.recipientType||x.jenisPenerima||'-'), location:posMap.get(x.posyanduId)?.name||'-',
+   identity:x.identityNumber||x.nisn||x.nis||'-', gender:genderText(x),
+   changedAt:x.updatedAt||x.createdAt||''
+  }));
+  rows.sort((a,b)=>{
+   const da=Date.parse(a.changedAt)||0, db=Date.parse(b.changedAt)||0;
+   return db-da;
+  });
+  const q=(document.getElementById('historyPMSearch')?.value||'').toLowerCase().trim();
+  const typ=(document.getElementById('historyPMType')?.value||'').trim();
+  const filtered=rows.filter(x=>{
+   const hay=[x.identity,x.name,x.location,x.source,x.pmType,x.gender,x.status,x.portionType].filter(Boolean).join(' ').toLowerCase();
+   return (!q||hay.includes(q))&&(!typ||x.pmType===typ);
+  });
+  const size=Number(document.getElementById('historyPMPageSize')?.value||20);
+  const pages=Math.max(1,Math.ceil(filtered.length/size));
+  if(historyPMPage>pages)historyPMPage=pages;
+  const start=(historyPMPage-1)*size;
+  const pageRows=filtered.slice(start,start+size);
+  const target=document.getElementById('pmHistoryTable');
+  if(!target)return;
+  target.innerHTML=table(['No','Tanggal / Jam','NIS / NIK','Nama','Jenis PM','Sekolah / Posyandu','JK','Porsi','Status','Sumber'],pageRows.map((x,i)=>`<tr>
+   <td>${start+i+1}</td><td>${esc(formatDateTimeID(x.changedAt))}</td><td>${esc(x.identity)}</td><td><b>${esc(x.name||'-')}</b></td>
+   <td>${esc(x.pmType)}</td><td>${esc(x.location)}</td><td>${esc(x.gender)}</td><td>${esc(x.portionType||'-')}</td>
+   <td><span class="badge ${String(x.status||'').toLowerCase()==='aktif'?'badge-active':'badge-off'}">${esc(String(x.status||'-').toUpperCase())}</span></td><td>${esc(x.source)}</td>
+  </tr>`));
+  const pEl=document.getElementById('pmHistoryPagination');
+  const from=filtered.length?start+1:0, to=Math.min(start+size,filtered.length);
+  let buttons='';
+  const add=(p,label,disabled,active)=>buttons+=`<button class="page-btn ${active?'active':''}" ${disabled?'disabled':''} onclick="historyPMPage=${p};renderPMHistory()">${label}</button>`;
+  add(Math.max(1,historyPMPage-1),'‹',historyPMPage===1,false);
+  let pf=Math.max(1,historyPMPage-2),pt=Math.min(pages,pf+4); if(pt-pf<4)pf=Math.max(1,pt-4);
+  for(let p=pf;p<=pt;p++)add(p,p,false,p===historyPMPage);
+  add(Math.min(pages,historyPMPage+1),'›',historyPMPage===pages,false);
+  pEl.innerHTML=`<div class="pagination-info">Menampilkan ${from}-${to} dari ${filtered.length} data PM</div><div class="pagination-buttons">${buttons}</div>`;
+ }catch(err){
+  console.error('Gagal memuat riwayat PM:',err);
+  const target=document.getElementById('pmHistoryTable'); if(target)target.innerHTML='<div style="padding:16px;color:#b91c1c">Gagal memuat riwayat input PM.</div>';
+ }
+}
+
+async function refresh(){await repairPosyanduRecipientData();await fillSchoolFilters();await dashboard();if(document.getElementById('schools').classList.contains('active'))renderSchools();if(document.getElementById('students')?.classList.contains('active'))renderStudents();if(document.getElementById('teachers').classList.contains('active'))renderTeachers();if(document.getElementById('staff').classList.contains('active'))renderStaff();if(document.getElementById('posyandu').classList.contains('active')){renderPosyandu();renderPosyanduRecipients()}if(document.getElementById('rekap')?.classList.contains('active'))renderRekap();if(document.getElementById('riwayatPM')?.classList.contains('active'))renderPMHistory()}
 
 setTimeout(setDefaultRekapDate,0);
 

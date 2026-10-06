@@ -120,6 +120,13 @@ button,input,select{font:inherit}.app{display:flex;min-height:100vh}
 </style>
 
 
+<style id="dashboard-posyandu-visible">
+#dashboardPosyanduCard{display:block!important;visibility:visible!important}
+#dashboardPosyandu{display:block!important;overflow-x:auto;min-height:40px}
+#dashboardPosyandu table{width:100%;min-width:720px}
+#dashboardPosyandu th,#dashboardPosyandu td{white-space:nowrap}
+</style>
+
 <style id="dashboard-all-schools">
 #dashboardSchools{
   max-height:650px;
@@ -200,6 +207,10 @@ button,input,select{font:inherit}.app{display:flex;min-height:100vh}
   <div><div class="stat-label">Total PM Keseluruhan</div><div class="stat-value" id="statPMTotal">0</div></div>
  </div>
 <div class="card" style="grid-column:span 2"><b>Struktur Data</b><p class="muted">Sekolah menjadi induk siswa, guru, dan tenaga kependidikan. B3/Posyandu dikelola sebagai kelompok penerima manfaat tersendiri.</p></div>
+  </div>
+  <div class="section card" id="dashboardPosyanduCard">
+    <div class="section-head"><h2>Ringkasan Posyandu</h2><button class="btn btn-secondary" onclick="showPage('posyandu',document.querySelector('.nav button:nth-of-type(8)'))">Kelola Posyandu</button></div>
+    <div id="dashboardPosyandu"></div>
   </div>
   <div class="section card">
     <div class="section-head"><h2>Ringkasan Sekolah</h2><button class="btn btn-secondary" onclick="showPage('schools',document.querySelector('.nav button:nth-of-type(3)'))">Kelola Sekolah</button></div>
@@ -1292,6 +1303,29 @@ async function dashboard(){
  const dashTable=document.getElementById('dashboardSchools');
  if(dashTable){
    dashTable.innerHTML=table(['No','Kode','Sekolah','Jenjang','Siswa','Guru','Tendik'],rows);
+ }
+
+ // Ringkasan Posyandu: hanya Posyandu aktif dan penerima aktif pada Posyandu tersebut.
+ const dashPos=document.getElementById('dashboardPosyandu');
+ if(dashPos){
+   const typeOf=x=>String(x?.recipientType||x?.jenisPenerima||x?.jenis_penerima||'').trim().toLowerCase();
+   const posRows=activePosyandu.map((x,i)=>{
+     const rr=activePosRecipientsValid.filter(a=>a.posyanduId===x.id);
+     const balita=rr.filter(a=>typeOf(a)==='balita').length;
+     const bumil=rr.filter(a=>typeOf(a)==='bumil').length;
+     const busui=rr.filter(a=>typeOf(a)==='busui').length;
+     return `<tr>
+       <td class="center">${i+1}</td>
+       <td>${esc(x.code||'-')}</td>
+       <td><b>${esc(x.name||'-')}</b></td>
+       <td>${esc([x.village,x.district].filter(Boolean).join(' / ')||x.address||'-')}</td>
+       <td>${balita}</td>
+       <td>${bumil}</td>
+       <td>${busui}</td>
+       <td><b>${balita+bumil+busui}</b></td>
+     </tr>`;
+   });
+   dashPos.innerHTML=table(['No','Kode','Posyandu','Lokasi','Balita','Bumil','Busui','Total PM'],posRows);
  }
 }
 

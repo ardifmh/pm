@@ -260,7 +260,7 @@ button,input,select{font:inherit}.app{display:flex;min-height:100vh}
   <div class="toolbar">
    <input id="posSearch" placeholder="Cari NIS/NIK atau nama..." oninput="resetPosyanduRecipientPage();renderPosyanduRecipients()">
    <select id="posRecipientType" onchange="resetPosyanduRecipientPage();renderPosyanduRecipients()">
-    <option value="">Semua penerima</option><option value="Balita">Balita</option><option value="Bumil">Bumil</option><option value="Busui">Busui</option>
+    <option value="">Semua penerima</option><option value="Balita">Balita</option><option value="Bumil">Bumil</option><option value="Busui">Busui</option><option value="Sekolah">Sekolah</option>
    </select>
    <select id="posRecipientPosyandu" onchange="resetPosyanduRecipientPage();renderPosyanduRecipients()">
     <option value="">Semua Posyandu</option>
@@ -289,13 +289,13 @@ button,input,select{font:inherit}.app{display:flex;min-height:100vh}
 
 <section id="riwayatPM" class="page">
  <div class="top">
-  <div><h1>Riwayat Input Data PM</h1><p>Menampilkan seluruh data penerima manfaat sekolah dan Posyandu berdasarkan perubahan/input terbaru.</p></div>
+  <div><h1>Riwayat Aktivitas Terbaru</h1><p>Hanya menampilkan input PM terbaru, penghapusan terbaru, perubahan status Aktif/Tidak Aktif, serta input/edit sekolah.</p></div>
  </div>
  <div class="card table-card">
   <div class="toolbar">
    <input id="historyPMSearch" placeholder="Cari nama, NIS/NIK, sekolah atau Posyandu..." oninput="renderPMHistory()">
    <select id="historyPMType" onchange="renderPMHistory()">
-    <option value="">Semua jenis PM</option><option value="Siswa">Siswa</option><option value="Guru">Guru</option><option value="Tenaga Kependidikan">Tenaga Kependidikan</option><option value="Balita">Balita</option><option value="Bumil">Bumil</option><option value="Busui">Busui</option>
+    <option value="">Semua aktivitas</option><option value="Siswa">Siswa</option><option value="Guru">Guru</option><option value="Tenaga Kependidikan">Tenaga Kependidikan</option><option value="Balita">Balita</option><option value="Bumil">Bumil</option><option value="Busui">Busui</option><option value="Sekolah">Sekolah</option>
    </select>
    <select id="historyPMPageSize" onchange="historyPMPage=1;renderPMHistory()"><option value="20">20 baris</option><option value="50">50 baris</option><option value="100">100 baris</option></select>
   </div>
@@ -374,19 +374,35 @@ async function put(store,obj){
  const clean={...obj};delete clean.id;await ref.set(clean,{merge:true})
 }
 async function del(store,id){
+ if(!confirm('Hapus data ini? Data yang dihapus tidak dapat dikembalikan kecuali dari backup.'))return;
+ const ref=db.collection(store).doc(id); const snap=await ref.get();
+ if(!snap.exists){toast('Data tidak ditemukan');return}
+ const existing={id:snap.id,...snap.data()};
  if(PM_STORES.includes(store)){
-   const ref=db.collection(store).doc(id); const snap=await ref.get();
-   if(snap.exists){
-     const existing={id:snap.id,...snap.data()}; const today=dayISO();
-     const oldEffective=existing.effectiveFrom||existing.updatedAt||existing.createdAt||today;
-     if(String(oldEffective).slice(0,10)!==today){
-       const hist={...existing}; delete hist.id;
-       await db.collection('pm_history').doc(uid('H')).set({sourceStore:store,sourceId:id,effectiveFrom:String(oldEffective).slice(0,10),effectiveTo:yesterdayISO(today),snapshot:hist,createdAt:new Date().toISOString()});
-     }
+   const today=dayISO();
+   const oldEffective=existing.effectiveFrom||existing.updatedAt||existing.createdAt||today;
+   if(String(oldEffective).slice(0,10)!==today){
+     const hist={...existing}; delete hist.id;
+     await db.collection('pm_history').doc(uid('H')).set({sourceStore:store,sourceId:id,effectiveFrom:String(oldEffective).slice(0,10),effectiveTo:yesterdayISO(today),snapshot:hist,createdAt:new Date().toISOString()});
    }
  }
- await db.collection(store).doc(id).delete()
+ await db.collection(store).doc(id).delete();
+ let location='-';
+ if(store==='beneficiaries'||store==='teachers'||store==='staff'){
+   const schools=await all('schools').catch(()=>[]); location=schools.find(x=>x.id===existing.schoolId)?.name||'-';
+ }else if(store==='posyandu_recipients'){
+   const pos=await all('posyandu').catch(()=>[]); location=pos.find(x=>x.id===existing.posyanduId)?.name||'-';
+ }
+ await logPMActivity({
+   eventType:'delete', sourceStore:store, sourceId:id, name:existing.name||'-',
+   identity:existing.identityNumber||existing.nisn||existing.nis||existing.npsn||'-',
+   pmType:store==='schools'?'Sekolah':activityPMType(store,existing), location,
+   status:existing.status||'-', previousStatus:existing.status||'', newStatus:'Dihapus', snapshot:existing
+ });
+ toast('Data berhasil dihapus');
+ await refresh();
 }
+
 async function pmRecordsAsOf(date){
  const target=String(date||dayISO()).slice(0,10);
  const [current,history]=await Promise.all([
@@ -577,6 +593,24 @@ function syncPosyanduPortion(type){
  if(!el)return;
  el.value=String(type||'Balita')==='Balita'?'Kecil':'Besar';
 }
+async function logPMActivity(data){
+ try{
+  await db.collection('pm_activity').doc(uid('ACT')).set({
+   ...data,
+   changedAt:new Date().toISOString()
+  });
+ }catch(err){console.error('Gagal mencatat riwayat aktivitas:',err)}
+}
+function activityPMType(store,obj){
+ if(store==='beneficiaries'){
+  const bt=String(obj?.beneficiaryType||'');
+  return bt==='1'?'Siswa':bt==='2'?'Guru':bt==='3'?'Tenaga Kependidikan':'PM Sekolah';
+ }
+ if(store==='teachers')return 'Guru';
+ if(store==='staff')return 'Tenaga Kependidikan';
+ if(store==='posyandu_recipients')return String(obj?.recipientType||obj?.jenisPenerima||'-');
+ return 'Sekolah';
+}
 async function saveForm(e){
  e.preventDefault();
 
@@ -634,13 +668,14 @@ async function saveForm(e){
    o.updatedAt=new Date().toISOString();
 
    // Saat edit, pertahankan createdAt lama.
+   let oldRecord=null;
    if(currentId){
      const existing=await Promise.race([
        all(store),
        new Promise((_,reject)=>setTimeout(()=>reject(new Error('Timeout saat membaca data lama dari Firebase (>10 detik).')),10000))
      ]);
-     const old=existing.find(x=>x.id===currentId);
-     if(old?.createdAt) o.createdAt=old.createdAt;
+     oldRecord=existing.find(x=>x.id===currentId)||null;
+     if(oldRecord?.createdAt) o.createdAt=oldRecord.createdAt;
    }
 
    // Beri batas waktu supaya aplikasi tidak terlihat "diam" jika Firestore bermasalah.
@@ -651,6 +686,34 @@ async function saveForm(e){
        10000
      ))
    ]);
+
+   // Riwayat aktivitas hanya mencatat kejadian yang memang diminta pengguna.
+   const isPM=PM_STORES.includes(store);
+   const isSchool=store==='schools';
+   if(isPM || isSchool){
+     const statusChanged=oldRecord && String(oldRecord.status||'').trim().toLowerCase()!==String(o.status||'').trim().toLowerCase();
+     let eventType=null;
+     if(!oldRecord) eventType='input';
+     else if(isPM && statusChanged) eventType='status_change';
+     else if(isSchool) eventType='school_edit';
+     if(eventType){
+       let location='-';
+       if(isPM && store!=='posyandu_recipients') {
+         const schools=await all('schools').catch(()=>[]);
+         location=schools.find(x=>x.id===o.schoolId)?.name||'-';
+       } else if(store==='posyandu_recipients'){
+         const pos=await all('posyandu').catch(()=>[]);
+         location=pos.find(x=>x.id===o.posyanduId)?.name||'-';
+       }
+       await logPMActivity({
+         eventType, sourceStore:store, sourceId:o.id, name:o.name||'-',
+         identity:o.identityNumber||o.nisn||o.nis||o.npsn||'-',
+         pmType:isSchool?'Sekolah':activityPMType(store,o), location,
+         status:o.status||'-', previousStatus:oldRecord?.status||'', newStatus:o.status||'',
+         snapshot:{...o}
+       });
+     }
+   }
 
    toast('✓ Data berhasil disimpan ke Firebase');
    closeModal();
@@ -1228,7 +1291,9 @@ async function importPosyanduExcel(event){
    const address=val(r,['Alamat','Address']);
    if(!identity||!name||!g||!recipientType||!pos){skip++;errors.push(`Baris ${i+2}: NIS/NIK, Nama, Jenis Kelamin, Jenis Penerima, atau Posyandu tidak valid.`);continue}
    const old=existing.find(x=>String(x.identityNumber||'')===identity&&x.posyanduId===pos.id);
-   await put('posyandu_recipients',{id:old?.id||uid('B3'),identityNumber:identity,name,birthDate,genderCode:g,parentName,recipientType,posyanduId:pos.id,status,portionType:recipientType==='Balita'?'Kecil':'Besar',address,createdAt:old?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()});
+   const obj={id:old?.id||uid('B3'),identityNumber:identity,name,birthDate,genderCode:g,parentName,recipientType,posyanduId:pos.id,status,portionType:recipientType==='Balita'?'Kecil':'Besar',address,createdAt:old?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()};
+   await put('posyandu_recipients',obj);
+   if(!old || String(old.status||'').toLowerCase()!==String(status||'').toLowerCase()) await logPMActivity({eventType:old?'status_change':'input',sourceStore:'posyandu_recipients',sourceId:obj.id,name,identity,pmType:recipientType,location:pos.name||'-',status,previousStatus:old?.status||'',newStatus:status,snapshot:obj});
    ok++;
   }
   alert(`Import Posyandu selesai.\n\nBerhasil: ${ok}\nDilewati: ${skip}`+(errors.length?`\n\n${errors.slice(0,8).join('\n')}`:''));
@@ -1621,68 +1686,63 @@ function formatDateTimeID(v){
 }
 async function renderPMHistory(){
  try{
-  const [beneficiaries,teachers,staff,posRecipients,schools,posyandu]=await Promise.all([
-   all('beneficiaries'),all('teachers'),all('staff'),all('posyandu_recipients'),all('schools'),all('posyandu')
-  ]);
+  // Aktivitas yang memang dicatat oleh aplikasi.
+  const activitiesRaw=await all('pm_activity').catch(()=>[]);
+  // Fallback untuk data lama: tampilkan input awal berdasarkan createdAt,
+  // sehingga riwayat tidak kosong walaupun fitur pm_activity baru dipasang.
+  const currentLists=await Promise.all(PM_STORES.map(store=>all(store).catch(()=>[])));
+  const schools=await all('schools').catch(()=>[]);
+  const inferred=[];
   const schoolMap=new Map(schools.map(x=>[x.id,x]));
-  const posMap=new Map(posyandu.map(x=>[x.id,x]));
-  const rows=[];
-  const genderText=x=>String(x?.genderCode||x?.gender||'')==='392'?'Laki-laki':String(x?.genderCode||x?.gender||'')==='64'?'Perempuan':(x?.gender||'-');
-  const typeText=x=>String(x?.beneficiaryType||'')==='1'?'Siswa':String(x?.beneficiaryType||'')==='2'?'Guru':String(x?.beneficiaryType||'')==='3'?'Tenaga Kependidikan':(x?.beneficiaryType||'-');
-  beneficiaries.forEach(x=>rows.push({
-   ...x, source:'Sekolah', pmType:typeText(x), location:schoolMap.get(x.schoolId)?.name||'-',
-   identity:x.identityNumber||x.nisn||x.nis||'-', gender:genderText(x),
-   changedAt:x.updatedAt||x.createdAt||''
-  }));
-  teachers.forEach(x=>rows.push({
-   ...x, source:'Sekolah', pmType:'Guru', location:schoolMap.get(x.schoolId)?.name||'-',
-   identity:x.number||x.identityNumber||'-', gender:genderText(x),
-   changedAt:x.updatedAt||x.createdAt||''
-  }));
-  staff.forEach(x=>rows.push({
-   ...x, source:'Sekolah', pmType:'Tenaga Kependidikan', location:schoolMap.get(x.schoolId)?.name||'-',
-   identity:x.number||x.identityNumber||'-', gender:genderText(x),
-   changedAt:x.updatedAt||x.createdAt||''
-  }));
-  posRecipients.forEach(x=>rows.push({
-   ...x, source:'Posyandu', pmType:String(x.recipientType||x.jenisPenerima||'-'), location:posMap.get(x.posyanduId)?.name||'-',
-   identity:x.identityNumber||x.nisn||x.nis||'-', gender:genderText(x),
-   changedAt:x.updatedAt||x.createdAt||''
-  }));
-  rows.sort((a,b)=>{
-   const da=Date.parse(a.changedAt)||0, db=Date.parse(b.changedAt)||0;
-   return db-da;
+  PM_STORES.forEach((store,idx)=>{
+    (currentLists[idx]||[]).forEach(x=>{
+      const exists=activitiesRaw.some(a=>a.sourceStore===store&&a.sourceId===x.id&&a.eventType==='input');
+      if(exists)return;
+      const changed=x.createdAt||x.updatedAt;
+      if(!changed)return;
+      let location='-';
+      if(store==='beneficiaries'||store==='teachers'||store==='staff') location=schoolMap.get(x.schoolId)?.name||'-';
+      else if(store==='posyandu_recipients') location='Posyandu';
+      inferred.push({eventType:'input',sourceStore:store,sourceId:x.id,name:x.name||'-',identity:x.identityNumber||x.nisn||x.nis||'-',pmType:activityPMType(store,x),location,status:x.status||'-',changedAt:changed,inferred:true});
+    });
   });
+  schools.forEach(x=>{
+    const exists=activitiesRaw.some(a=>a.sourceStore==='schools'&&a.sourceId===x.id&&(a.eventType==='input'||a.eventType==='school_edit'));
+    if(!exists && (x.createdAt||x.updatedAt)) inferred.push({eventType:'input',sourceStore:'schools',sourceId:x.id,name:x.name||'-',identity:x.npsn||x.code||'-',pmType:'Sekolah',location:x.address||'-',status:x.status||'-',changedAt:x.createdAt||x.updatedAt,inferred:true});
+  });
+  const activities=[...activitiesRaw,...inferred];
   const q=(document.getElementById('historyPMSearch')?.value||'').toLowerCase().trim();
   const typ=(document.getElementById('historyPMType')?.value||'').trim();
-  const filtered=rows.filter(x=>{
-   const hay=[x.identity,x.name,x.location,x.source,x.pmType,x.gender,x.status,x.portionType].filter(Boolean).join(' ').toLowerCase();
-   return (!q||hay.includes(q))&&(!typ||x.pmType===typ);
-  });
+  const eventLabel=e=>e.eventType==='input'?'Input Baru':e.eventType==='delete'?'Hapus Terbaru':e.eventType==='status_change'?'Perubahan Status':e.eventType==='school_edit'?'Edit Sekolah':'Aktivitas';
+  const filtered=activities
+   .sort((a,b)=>(Date.parse(b.changedAt)||0)-(Date.parse(a.changedAt)||0))
+   .filter(x=>{
+     const typeMatch=!typ || x.pmType===typ || (typ==='Sekolah'&&x.pmType==='Sekolah');
+     const hay=[x.identity,x.name,x.location,x.pmType,eventLabel(x),x.status,x.previousStatus,x.newStatus].filter(Boolean).join(' ').toLowerCase();
+     return typeMatch&&(!q||hay.includes(q));
+   });
   const size=Number(document.getElementById('historyPMPageSize')?.value||20);
   const pages=Math.max(1,Math.ceil(filtered.length/size));
   if(historyPMPage>pages)historyPMPage=pages;
   const start=(historyPMPage-1)*size;
   const pageRows=filtered.slice(start,start+size);
-  const target=document.getElementById('pmHistoryTable');
-  if(!target)return;
-  target.innerHTML=table(['No','Tanggal / Jam','NIS / NIK','Nama','Jenis PM','Sekolah / Posyandu','JK','Porsi','Status','Sumber'],pageRows.map((x,i)=>`<tr>
-   <td>${start+i+1}</td><td>${esc(formatDateTimeID(x.changedAt))}</td><td>${esc(x.identity)}</td><td><b>${esc(x.name||'-')}</b></td>
-   <td>${esc(x.pmType)}</td><td>${esc(x.location)}</td><td>${esc(x.gender)}</td><td>${esc(x.portionType||'-')}</td>
-   <td><span class="badge ${String(x.status||'').toLowerCase()==='aktif'?'badge-active':'badge-off'}">${esc(String(x.status||'-').toUpperCase())}</span></td><td>${esc(x.source)}</td>
-  </tr>`));
+  const target=document.getElementById('pmHistoryTable'); if(!target)return;
+  target.innerHTML=table(['No','Tanggal / Jam','Aktivitas','NIS / NIK / NPSN','Nama','Jenis','Sekolah / Posyandu','Status'],pageRows.map((x,i)=>{
+    const label=eventLabel(x);
+    const statusText=x.eventType==='status_change' ? `${x.previousStatus||'-'} → ${x.newStatus||'-'}` : (x.eventType==='delete'?'DIHAPUS':(x.status||'-'));
+    return `<tr><td>${start+i+1}</td><td>${esc(formatDateTimeID(x.changedAt))}</td><td><b>${esc(label)}</b></td><td>${esc(x.identity||'-')}</td><td>${esc(x.name||'-')}</td><td>${esc(x.pmType||'-')}</td><td>${esc(x.location||'-')}</td><td>${esc(statusText)}</td></tr>`;
+  }));
   const pEl=document.getElementById('pmHistoryPagination');
   const from=filtered.length?start+1:0, to=Math.min(start+size,filtered.length);
-  let buttons='';
-  const add=(p,label,disabled,active)=>buttons+=`<button class="page-btn ${active?'active':''}" ${disabled?'disabled':''} onclick="historyPMPage=${p};renderPMHistory()">${label}</button>`;
+  let buttons=''; const add=(p,label,disabled,active)=>buttons+=`<button class="page-btn ${active?'active':''}" ${disabled?'disabled':''} onclick="historyPMPage=${p};renderPMHistory()">${label}</button>`;
   add(Math.max(1,historyPMPage-1),'‹',historyPMPage===1,false);
   let pf=Math.max(1,historyPMPage-2),pt=Math.min(pages,pf+4); if(pt-pf<4)pf=Math.max(1,pt-4);
   for(let p=pf;p<=pt;p++)add(p,p,false,p===historyPMPage);
   add(Math.min(pages,historyPMPage+1),'›',historyPMPage===pages,false);
-  pEl.innerHTML=`<div class="pagination-info">Menampilkan ${from}-${to} dari ${filtered.length} data PM</div><div class="pagination-buttons">${buttons}</div>`;
+  pEl.innerHTML=`<div class="pagination-info">Menampilkan ${from}-${to} dari ${filtered.length} aktivitas</div><div class="pagination-buttons">${buttons}</div>`;
  }catch(err){
-  console.error('Gagal memuat riwayat PM:',err);
-  const target=document.getElementById('pmHistoryTable'); if(target)target.innerHTML='<div style="padding:16px;color:#b91c1c">Gagal memuat riwayat input PM.</div>';
+  console.error('Gagal memuat riwayat aktivitas:',err);
+  const target=document.getElementById('pmHistoryTable'); if(target)target.innerHTML='<div style="padding:16px;color:#b91c1c">Gagal memuat riwayat aktivitas.</div>';
  }
 }
 
@@ -1706,7 +1766,7 @@ async function importStudentsExcel(event){
   const type=v=>{let z=norm(v).toLowerCase();return ['1','siswa'].includes(z)?'1':['2','guru'].includes(z)?'2':['3','tendik','tenaga kependidikan'].includes(z)?'3':''};
   const date=v=>normalizeISODate(v);
   const old=await all('beneficiaries');let ok=0,skip=0,errors=[];
-  for(let i=0;i<rows.length;i++){const r=rows[i],identity=val(r,['NIS_NIK','NIS/NIK','NIS NIK','NIS','NIK']),name=val(r,['Nama','Nama Lengkap']),code=val(r,['Kode_Sekolah','Kode Sekolah']),sn=val(r,['Nama_Sekolah','Nama Sekolah','Sekolah']);const school=schools.find(s=>(code&&String(s.code).toLowerCase()===code.toLowerCase())||(sn&&String(s.name).toLowerCase()===sn.toLowerCase()));const g=gender(val(r,['Jenis_Kelamin','Jenis Kelamin','JK'])),bt=type(val(r,['Jenis_Penerima_Manfaat','Jenis Penerima Manfaat','Jenis Penerima']));if(!identity||!name||!school||!g||!bt){skip++;errors.push(`Baris ${i+2}: data wajib/kode tidak valid.`);continue}const ex=old.find(x=>String(x.identityNumber||x.nisn||x.nis)===identity);await put('beneficiaries',{id:ex?.id||uid('PM'),identityNumber:identity,name,birthDate:date(val(r,['Tanggal_Lahir','Tanggal Lahir','Tgl Lahir'])),genderCode:g,parentName:val(r,['Nama_Orang_Tua','Nama Orang Tua','Orang Tua','Nama Wali']),beneficiaryType:bt,schoolId:school.id,status:val(r,['Status'])||'Aktif',portionType:val(r,['Jenis_Porsi','Jenis Porsi','Porsi']).toLowerCase()==='besar'?'Besar':'Kecil',address:val(r,['Alamat','Address']),createdAt:ex?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()});ok++}
+  for(let i=0;i<rows.length;i++){const r=rows[i],identity=val(r,['NIS_NIK','NIS/NIK','NIS NIK','NIS','NIK']),name=val(r,['Nama','Nama Lengkap']),code=val(r,['Kode_Sekolah','Kode Sekolah']),sn=val(r,['Nama_Sekolah','Nama Sekolah','Sekolah']);const school=schools.find(s=>(code&&String(s.code).toLowerCase()===code.toLowerCase())||(sn&&String(s.name).toLowerCase()===sn.toLowerCase()));const g=gender(val(r,['Jenis_Kelamin','Jenis Kelamin','JK'])),bt=type(val(r,['Jenis_Penerima_Manfaat','Jenis Penerima Manfaat','Jenis Penerima']));if(!identity||!name||!school||!g||!bt){skip++;errors.push(`Baris ${i+2}: data wajib/kode tidak valid.`);continue}const ex=old.find(x=>String(x.identityNumber||x.nisn||x.nis)===identity);await put('beneficiaries',{id:ex?.id||uid('PM'),identityNumber:identity,name,birthDate:date(val(r,['Tanggal_Lahir','Tanggal Lahir','Tgl Lahir'])),genderCode:g,parentName:val(r,['Nama_Orang_Tua','Nama Orang Tua','Orang Tua','Nama Wali']),beneficiaryType:bt,schoolId:school.id,status:val(r,['Status'])||'Aktif',portionType:val(r,['Jenis_Porsi','Jenis Porsi','Porsi']).toLowerCase()==='besar'?'Besar':'Kecil',address:val(r,['Alamat','Address']),createdAt:ex?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()});if(!ex || String(ex.status||'').toLowerCase()!==String((val(r,['Status'])||'Aktif')).toLowerCase()) await logPMActivity({eventType:ex?'status_change':'input',sourceStore:'beneficiaries',sourceId:ex?.id||'import',name,identity,pmType:bt==='1'?'Siswa':bt==='2'?'Guru':'Tenaga Kependidikan',location:school.name||'-',status:val(r,['Status'])||'Aktif',previousStatus:ex?.status||'',newStatus:val(r,['Status'])||'Aktif'});ok++}
   alert(`Import selesai. Berhasil: ${ok}, dilewati: ${skip}.`+(errors.length?`\n\n${errors.slice(0,5).join('\n')}`:''));toast(`Import penerima: ${ok} berhasil`);refresh();
  }catch(err){alert('Import gagal: '+err.message)}event.target.value='';
 }
@@ -1809,29 +1869,29 @@ async function importAllPMExcel(event){
 
    if(pmType==='1'){
     const ex=oldBeneficiaries.find(x=>String(x.identityNumber||x.nisn||x.nis)===identity);
-    await put('beneficiaries',{
-     id:ex?.id||uid('PM'),identityNumber:identity,name,birthDate,genderCode:g,parentName,
+    const obj={id:ex?.id||uid('PM'),identityNumber:identity,name,birthDate,genderCode:g,parentName,
      beneficiaryType:'1',schoolId:school.id,status,portionType:portion,address,
-     createdAt:ex?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()
-    });
+     createdAt:ex?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()};
+    await put('beneficiaries',obj);
+    if(!ex || String(ex.status||'').toLowerCase()!==String(status||'').toLowerCase()) await logPMActivity({eventType:ex?'status_change':'input',sourceStore:'beneficiaries',sourceId:obj.id,name,identity,pmType:'Siswa',location:school.name||'-',status,previousStatus:ex?.status||'',newStatus:status,snapshot:obj});
     siswaOk++;
    }else if(pmType==='2'){
     const ex=oldTeachers.find(x=>String(x.number||x.identityNumber||'')===identity);
-    await put('teachers',{
-     id:ex?.id||uid('GRU'),number:identity,identityNumber:identity,name,birthDate,
+    const obj={id:ex?.id||uid('GRU'),number:identity,identityNumber:identity,name,birthDate,
      genderCode:g,parentName,beneficiaryType:'2',schoolId:school.id,status,
      portionType:portion,address,position:'Guru',mbg:'Ya',
-     createdAt:ex?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()
-    });
+     createdAt:ex?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()};
+    await put('teachers',obj);
+    if(!ex || String(ex.status||'').toLowerCase()!==String(status||'').toLowerCase()) await logPMActivity({eventType:ex?'status_change':'input',sourceStore:'teachers',sourceId:obj.id,name,identity,pmType:'Guru',location:school.name||'-',status,previousStatus:ex?.status||'',newStatus:status,snapshot:obj});
     guruOk++;
    }else{
     const ex=oldStaff.find(x=>String(x.number||x.identityNumber||'')===identity);
-    await put('staff',{
-     id:ex?.id||uid('TEN'),number:identity,identityNumber:identity,name,birthDate,
+    const obj={id:ex?.id||uid('TEN'),number:identity,identityNumber:identity,name,birthDate,
      genderCode:g,parentName,beneficiaryType:'3',schoolId:school.id,status,
      portionType:portion,address,position:'Tenaga Kependidikan',mbg:'Ya',
-     createdAt:ex?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()
-    });
+     createdAt:ex?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()};
+    await put('staff',obj);
+    if(!ex || String(ex.status||'').toLowerCase()!==String(status||'').toLowerCase()) await logPMActivity({eventType:ex?'status_change':'input',sourceStore:'staff',sourceId:obj.id,name,identity,pmType:'Tenaga Kependidikan',location:school.name||'-',status,previousStatus:ex?.status||'',newStatus:status,snapshot:obj});
     tendikOk++;
    }
   }

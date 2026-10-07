@@ -39,7 +39,11 @@ button,input,select{font:inherit}.app{display:flex;min-height:100vh}
 .page-btn{border:1px solid #dbe3ee;background:#fff;border-radius:8px;min-width:34px;height:34px;padding:0 9px;cursor:pointer}
 .page-btn.active{background:#1455a0;color:#fff;border-color:#1455a0;font-weight:700}
 .page-btn:disabled{opacity:.45;cursor:not-allowed}
-</style></style>
+</style>
+<style id="dashboard-posyandu-total-style">
+#dashboardPosyandu .summary-total-row td{font-weight:700;background:#f3f6fa;border-top:2px solid #cbd5e1;}
+</style>
+</style>
 </style>
 <script src="https://www.gstatic.com/firebasejs/12.19.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/12.19.0/firebase-auth-compat.js"></script>
@@ -1495,6 +1499,17 @@ async function dashboard(){
        <td><b>${balita+bumil+busui}</b></td>
      </tr>`;
    });
+   const totalBalita=activePosRecipientsValid.filter(a=>typeOf(a)==='balita').length;
+   const totalBumil=activePosRecipientsValid.filter(a=>typeOf(a)==='bumil').length;
+   const totalBusui=activePosRecipientsValid.filter(a=>typeOf(a)==='busui').length;
+   const totalPosPM=totalBalita+totalBumil+totalBusui;
+   posRows.push(`<tr class="summary-total-row">
+     <td colspan="4" style="text-align:right;font-weight:700">TOTAL</td>
+     <td><b>${totalBalita}</b></td>
+     <td><b>${totalBumil}</b></td>
+     <td><b>${totalBusui}</b></td>
+     <td><b>${totalPosPM}</b></td>
+   </tr>`);
    dashPos.innerHTML=table(['No','Kode','Posyandu','Lokasi','Balita','Bumil','Busui','Total PM'],posRows);
  }
 }

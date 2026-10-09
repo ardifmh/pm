@@ -39,11 +39,7 @@ button,input,select{font:inherit}.app{display:flex;min-height:100vh}
 .page-btn{border:1px solid #dbe3ee;background:#fff;border-radius:8px;min-width:34px;height:34px;padding:0 9px;cursor:pointer}
 .page-btn.active{background:#1455a0;color:#fff;border-color:#1455a0;font-weight:700}
 .page-btn:disabled{opacity:.45;cursor:not-allowed}
-</style>
-<style id="dashboard-posyandu-total-style">
-#dashboardPosyandu .summary-total-row td{font-weight:700;background:#f3f6fa;border-top:2px solid #cbd5e1;}
-</style>
-</style>
+</style></style>
 </style>
 <script src="https://www.gstatic.com/firebasejs/12.19.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/12.19.0/firebase-auth-compat.js"></script>
@@ -193,7 +189,7 @@ button,input,select{font:inherit}.app{display:flex;min-height:100vh}
 
 <main class="main">
 <section id="dashboard" class="page active">
-  <div class="top"><div><h1>Dashboard</h1><p>Ringkasan data penerima manfaat SPPG.</p></div><button class="btn btn-primary" onclick="openModal('school')">+ Tambah Sekolah</button></div>
+  <div class="top"><div><h1>Dashboard</h1><p>Ringkasan data penerima manfaat SPPG.</p><div id="dashboardPeriod" style="margin-top:6px;font-size:12px;color:#475569;font-weight:700"></div></div><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><div class="period-filter" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><button class="btn btn-secondary" type="button" onclick="changeDashboardPeriod(-1)">◀ Sebelumnya</button><input id="dashboardPeriodDate" type="date" onchange="setDashboardPeriod(this.value)" title="Pilih tanggal dalam periode yang ingin dilihat" style="height:38px;border:1px solid #cbd5e1;border-radius:8px;padding:0 10px"><button class="btn btn-secondary" type="button" onclick="setDashboardPeriod(mondayISO(dayISO()))">Periode Sekarang</button><button class="btn btn-secondary" type="button" onclick="changeDashboardPeriod(1)">Berikutnya ▶</button></div><button class="btn btn-primary" onclick="openModal('school')">+ Tambah Sekolah</button></div></div>
   <div class="grid">
     <div class="card stat"><div><div class="muted">Sekolah</div><div class="num" id="statSchools">0</div></div><div class="ico">🏫</div></div>
     <div class="card stat"><div><div class="muted">Siswa Aktif</div><div class="num" id="statStudents">0</div></div><div class="ico">👨‍🎓</div></div>
@@ -293,18 +289,18 @@ button,input,select{font:inherit}.app{display:flex;min-height:100vh}
 
 <section id="riwayatPM" class="page">
  <div class="top">
-  <div><h1>Riwayat Aktivitas Terbaru</h1><p>Hanya menampilkan input PM terbaru, penghapusan terbaru, perubahan status Aktif/Tidak Aktif, serta input/edit sekolah.</p></div>
+  <div><h1>Riwayat Aktivitas Terbaru</h1><p>Menampilkan seluruh aktivitas terbaru: input PM, penghapusan, perubahan status Aktif/Tidak Aktif, serta input dan edit sekolah.</p></div>
  </div>
  <div class="card table-card">
-  <div class="toolbar">
-   <input id="historyPMSearch" placeholder="Cari nama, NIS/NIK, sekolah atau Posyandu..." oninput="renderPMHistory()">
-   <select id="historyPMType" onchange="renderPMHistory()">
+  <div class="toolbar" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+   <input id="historyPMSearch" placeholder="Cari nama, NIS/NIK, sekolah atau Posyandu..." oninput="historyPMPage=1;renderPMHistory()">
+   <select id="historyPMType" onchange="historyPMPage=1;renderPMHistory()">
     <option value="">Semua aktivitas</option><option value="Siswa">Siswa</option><option value="Guru">Guru</option><option value="Tenaga Kependidikan">Tenaga Kependidikan</option><option value="Balita">Balita</option><option value="Bumil">Bumil</option><option value="Busui">Busui</option><option value="Sekolah">Sekolah</option>
    </select>
    <select id="historyPMPageSize" onchange="historyPMPage=1;renderPMHistory()"><option value="20">20 baris</option><option value="50">50 baris</option><option value="100">100 baris</option></select>
   </div>
   <div id="pmHistoryTable"></div>
-  <div id="pmHistoryPagination" class="pagination-wrap"></div>
+  <div id="pmHistoryPagination"></div>
  </div>
 </section>
 
@@ -317,7 +313,7 @@ button,input,select{font:inherit}.app{display:flex;min-height:100vh}
   <div class="actions">
    <label class="date-rekap">
     <span>Tanggal Rekap</span>
-    <input id="rekapDate" type="date" onchange="renderRekap()">
+    <input id="rekapDate" type="date" onchange="renderRekap()"><span style="font-size:11px;color:#64748b">Tanggal yang dipilih akan mengikuti periode Senin–Minggu.</span>
    </label>
    <button class="btn btn-secondary" onclick="window.print()">🖨️ Cetak</button>
   </div>
@@ -352,30 +348,116 @@ const auth=firebase.auth();
 function uid(prefix){return prefix+'-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,8).toUpperCase()}
 async function all(store){const snap=await db.collection(store).get();return snap.docs.map(d=>({id:d.id,...d.data()}))}
 const PM_STORES=['beneficiaries','teachers','staff','posyandu_recipients'];
-function dayISO(d=new Date()){const x=new Date(d);return `${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,'0')}-${String(x.getDate()).padStart(2,'0')}`}
-function yesterdayISO(day){const d=new Date(day+'T00:00:00');d.setDate(d.getDate()-1);return dayISO(d)}
+function dayISO(d=new Date()){
+ const x=new Date(d);
+ return `${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,'0')}-${String(x.getDate()).padStart(2,'0')}`;
+}
+function dateObjISO(iso){return new Date(String(iso).slice(0,10)+'T00:00:00');}
+function nextMondayISO(date=new Date()){
+ const d=dateObjISO(dayISO(date));
+ const day=d.getDay();
+ const add=day===0?1:(8-day)%7 || 7;
+ d.setDate(d.getDate()+add);
+ return dayISO(d);
+}
+function mondayISO(date=new Date()){
+ const d=dateObjISO(dayISO(date));
+ const day=d.getDay();
+ const diff=day===0?-6:1-day;
+ d.setDate(d.getDate()+diff);
+ return dayISO(d);
+}
+function sundayISO(date=new Date()){
+ const d=dateObjISO(mondayISO(date));
+ d.setDate(d.getDate()+6);
+ return dayISO(d);
+}
+function previousDayISO(iso){
+ const d=dateObjISO(iso);d.setDate(d.getDate()-1);return dayISO(d);
+}
+function addDaysISO(iso,days){
+ const d=dateObjISO(iso);
+ d.setDate(d.getDate()+Number(days||0));
+ return dayISO(d);
+}
+function weeklyPeriod(date=new Date()){
+ const start=mondayISO(date), end=sundayISO(date);
+ return {start,end,label:`${formatDateID(start)} – ${formatDateID(end)}`};
+}
+function formatDateID(iso){
+ if(!iso)return '-';
+ const d=dateObjISO(iso);
+ return d.toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'});
+}
+function yesterdayISO(day){return previousDayISO(day);}
+
 async function put(store,obj){
  const ref=db.collection(store).doc(obj.id);
  if(PM_STORES.includes(store)){
    const snap=await ref.get();
    const existing=snap.exists?{id:snap.id,...snap.data()}:null;
    const today=dayISO();
-   let effectiveFrom=obj.effectiveFrom||today;
-   if(existing){
-     const oldEffective=existing.effectiveFrom||existing.updatedAt||existing.createdAt||today;
-     if(String(oldEffective).slice(0,10)!==today){
-       const hist={...existing};
-       delete hist.id;
-       await db.collection('pm_history').doc(uid('H')).set({
-         sourceStore:store, sourceId:obj.id, effectiveFrom:String(oldEffective).slice(0,10),
-         effectiveTo:yesterdayISO(today), snapshot:hist, createdAt:new Date().toISOString()
-       });
-       effectiveFrom=today;
-     }else effectiveFrom=String(oldEffective).slice(0,10);
+   const nextMonday=nextMondayISO(today);
+   const todayStart=mondayISO(today);
+   // Tanggal mulai berlaku disimpan terpisah dari createdAt/updatedAt.
+   // Data baru hari ini tidak boleh masuk periode yang sedang berjalan;
+   // data tersebut baru aktif pada Senin periode berikutnya.
+   let effectiveFrom=existing?.effectiveFrom||existing?.updatedAt||existing?.createdAt||today;
+   const createdDay=String(existing?.createdAt||'').slice(0,10);
+   const isCurrentWeekInput=createdDay && createdDay>=todayStart && createdDay<=today;
+   // Aturan periode mingguan: seluruh PM yang INPUT pada Senin-Minggu
+   // periode berjalan baru berlaku pada Senin periode berikutnya.
+   // Ini juga memperbaiki data lama yang dibuat pada minggu berjalan
+   // sebelum field effectiveFrom ditambahkan.
+   if((!existing || !existing?.effectiveFrom) && isCurrentWeekInput){
+     effectiveFrom=nextMonday;
+   }else if(existing && existing?.effectiveFrom && isCurrentWeekInput &&
+            String(existing.status||'').trim().toLowerCase()==='aktif' &&
+            String(existing.effectiveFrom).slice(0,10)>=todayStart &&
+            String(existing.effectiveFrom).slice(0,10)<=today){
+     effectiveFrom=nextMonday;
+   }
+   const oldStatus=String(existing?.status||'').trim().toLowerCase();
+   const newStatus=String(obj?.status||'').trim().toLowerCase();
+   const isNew=!existing;
+   const isDeactivate=existing && oldStatus==='aktif' && newStatus==='tidak aktif';
+   const isReactivate=existing && oldStatus!=='aktif' && newStatus==='aktif';
+   const existingFrom=String(effectiveFrom).slice(0,10);
+
+   // PM baru selalu masuk pada Senin periode berikutnya.
+   if(isNew){
+     effectiveFrom=nextMonday;
+   }else if(existingFrom>today){
+     // Masih pending untuk periode berikutnya: cukup perbarui data pending.
+     effectiveFrom=existingFrom;
+   }else if(isDeactivate){
+     // Penghapusan/status tidak aktif adalah pengecualian: berlaku segera pada periode berjalan.
+     const hist={...existing};delete hist.id;
+     await db.collection('pm_history').doc(uid('H')).set({
+       sourceStore:store,sourceId:obj.id,effectiveFrom:existingFrom,effectiveTo:previousDayISO(today),
+       snapshot:hist,createdAt:new Date().toISOString(),reason:'status_inactive'
+     });
+     effectiveFrom=today;
+   }else if(isReactivate){
+     // Aktif kembali mengikuti aturan penambahan: mulai periode berikutnya.
+     const hist={...existing};delete hist.id;
+     await db.collection('pm_history').doc(uid('H')).set({
+       sourceStore:store,sourceId:obj.id,effectiveFrom:existingFrom,effectiveTo:previousDayISO(nextMonday),
+       snapshot:hist,createdAt:new Date().toISOString(),reason:'reactivate'
+     });
+     effectiveFrom=nextMonday;
+   }else{
+     // Edit data biasa berlaku pada periode berikutnya, sedangkan periode berjalan mempertahankan snapshot lama.
+     const hist={...existing};delete hist.id;
+     await db.collection('pm_history').doc(uid('H')).set({
+       sourceStore:store,sourceId:obj.id,effectiveFrom:existingFrom,effectiveTo:previousDayISO(nextMonday),
+       snapshot:hist,createdAt:new Date().toISOString(),reason:'edit_period'
+     });
+     effectiveFrom=nextMonday;
    }
    obj={...obj,effectiveFrom};
  }
- const clean={...obj};delete clean.id;await ref.set(clean,{merge:true})
+ const clean={...obj};delete clean.id;await ref.set(clean,{merge:true});
 }
 async function del(store,id){
  if(!confirm('Hapus data ini? Data yang dihapus tidak dapat dikembalikan kecuali dari backup.'))return;
@@ -384,10 +466,14 @@ async function del(store,id){
  const existing={id:snap.id,...snap.data()};
  if(PM_STORES.includes(store)){
    const today=dayISO();
-   const oldEffective=existing.effectiveFrom||existing.updatedAt||existing.createdAt||today;
-   if(String(oldEffective).slice(0,10)!==today){
+   const oldEffective=String(existing.effectiveFrom||existing.updatedAt||existing.createdAt||today).slice(0,10);
+   // Hapus PM berlaku langsung. Simpan snapshot lama agar periode sebelum penghapusan tetap utuh.
+   if(oldEffective<=today){
      const hist={...existing}; delete hist.id;
-     await db.collection('pm_history').doc(uid('H')).set({sourceStore:store,sourceId:id,effectiveFrom:String(oldEffective).slice(0,10),effectiveTo:yesterdayISO(today),snapshot:hist,createdAt:new Date().toISOString()});
+     await db.collection('pm_history').doc(uid('H')).set({
+       sourceStore:store,sourceId:id,effectiveFrom:oldEffective,effectiveTo:previousDayISO(today),
+       snapshot:hist,createdAt:new Date().toISOString(),reason:'delete'
+     });
    }
  }
  await db.collection(store).doc(id).delete();
@@ -413,18 +499,41 @@ async function pmRecordsAsOf(date){
    Promise.all(PM_STORES.map(all)), all('pm_history').catch(()=>[])
  ]);
  const byId=new Map();
- PM_STORES.forEach((store,i)=>current[i].forEach(x=>byId.set(store+'|'+x.id,{...x,__store:store})));
- history.forEach(h=>{
-   if(!h.sourceStore||!h.sourceId)return;
-   const from=String(h.effectiveFrom||'').slice(0,10), to=String(h.effectiveTo||'9999-12-31').slice(0,10);
-   if(from<=target && target<=to){byId.set(h.sourceStore+'|'+h.sourceId,{...(h.snapshot||{}),id:h.sourceId,__store:h.sourceStore});}
- });
- // Current records are valid from their effectiveFrom onward. Exclude records created after target.
- return [...byId.values()].filter(x=>{
-   const from=String(x.effectiveFrom||x.createdAt||'0000-01-01').slice(0,10);
-   return from<=target;
- });
+ PM_STORES.forEach((store,i)=>current[i].forEach(x=>{
+   let from=String(x.effectiveFrom||x.createdAt||'0000-01-01').slice(0,10);
+   const created=String(x.createdAt||'').slice(0,10);
+   const targetMonday=mondayISO(target);
+   const targetSunday=sundayISO(target);
+   // Legacy/current-week input tanpa effectiveFrom (atau effectiveFrom salah
+   // di minggu berjalan) diperlakukan sebagai pending sampai Senin berikutnya.
+   if(String(x.status||'').trim().toLowerCase()==='aktif' && created && created>=targetMonday && created<=targetSunday && from>=targetMonday && from<=target){
+     from=addDaysISO(targetSunday,1);
+   }
+   if(from<=target) byId.set(store+'|'+x.id,{...x,__store:store,effectiveFrom:from});
+ }));
+ // History dapat berisi beberapa versi untuk PM yang sama. Urutkan berdasarkan
+ // effectiveFrom agar versi yang tepat untuk tanggal target yang dipilih yang menang.
+ history
+   .filter(h=>h&&h.sourceStore&&h.sourceId)
+   .sort((a,b)=>{
+     const af=String(a.effectiveFrom||'0000-01-01').slice(0,10);
+     const bf=String(b.effectiveFrom||'0000-01-01').slice(0,10);
+     if(af!==bf)return af.localeCompare(bf);
+     return String(a.createdAt||'').localeCompare(String(b.createdAt||''));
+   })
+   .forEach(h=>{
+     const from=String(h.effectiveFrom||'').slice(0,10), to=String(h.effectiveTo||'9999-12-31').slice(0,10);
+     if(from<=target && target<=to){
+       byId.set(h.sourceStore+'|'+h.sourceId,{...(h.snapshot||{}),id:h.sourceId,__store:h.sourceStore});
+     }
+   });
+ return [...byId.values()].filter(x=>String(x.effectiveFrom||x.createdAt||'0000-01-01').slice(0,10)<=target);
 }
+function periodRecordsFor(date){
+ // Rekap periode menggunakan kondisi yang berlaku pada Senin awal periode.
+ return pmRecordsAsOf(mondayISO(date));
+}
+
 function loginFirebase(){const email=document.getElementById('loginEmail').value.trim(),pass=document.getElementById('loginPassword').value;const er=document.getElementById('loginError');er.style.display='none';auth.signInWithEmailAndPassword(email,pass).catch(e=>{er.textContent='Login gagal: '+e.message;er.style.display='block'})}
 function logoutFirebase(){auth.signOut()}
 auth.onAuthStateChanged(async user=>{currentUser=user;const screen=document.getElementById('loginScreen'),root=document.getElementById('appRoot');if(user){screen.style.display='none';root.style.display='flex';document.getElementById('userEmail').textContent=user.email||'';try{await refresh()}catch(e){alert('Gagal membaca Firebase: '+e.message)}}else{screen.style.display='flex';root.style.display='none'}});
@@ -1364,25 +1473,71 @@ async function fillSchoolFilters(){
  let s=await all('schools'), opts='<option value="">Semua sekolah</option>'+s.map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join('');
  ['studentSchool','teacherSchool','staffSchool'].forEach(id=>{let el=document.getElementById(id);if(el){let old=el.value;el.innerHTML=opts;el.value=old}})
 }
+async function repairTodayPMEffectiveDates(){
+ try{
+  const today=dayISO();
+  const next=nextMondayISO(today);
+  for(const store of PM_STORES){
+   const rows=await all(store);
+   for(const x of rows){
+    if(x.effectiveFrom)continue;
+    const created=String(x.createdAt||'').slice(0,10);
+    if(created===today){
+      const ref=db.collection(store).doc(x.id);
+      await ref.set({effectiveFrom:next,updatedAt:x.updatedAt||x.createdAt||new Date().toISOString()},{merge:true});
+    }
+   }
+  }
+ }catch(err){console.error('Perbaikan tanggal berlaku PM:',err)}
+}
+
+let dashboardPeriodDate = mondayISO(dayISO());
+function setDashboardPeriod(date){
+ // Tanggal yang dipilih selalu dinormalisasi ke hari Senin pada minggu tersebut.
+ const iso=mondayISO(String(date||dayISO()).slice(0,10));
+ dashboardPeriodDate=iso;
+ const el=document.getElementById('dashboardPeriodDate');
+ if(el) el.value=iso;
+ dashboard();
+}
+function changeDashboardPeriod(offset){
+ // Geser tanggal secara lokal agar tidak terjadi pergeseran hari akibat konversi UTC.
+ const base=mondayISO(dashboardPeriodDate||dayISO());
+ const d=dateObjISO(base);
+ d.setDate(d.getDate()+(Number(offset)||0)*7);
+ setDashboardPeriod(dayISO(d));
+}
 async function dashboard(){
- let [s,st,t,staff,p,pr]=await Promise.all([
+ const selectedDate=mondayISO(dashboardPeriodDate||dayISO());
+ dashboardPeriodDate=selectedDate;
+ const period=weeklyPeriod(selectedDate);
+ let [s,st,t,staff,p,pr,pmPeriod]=await Promise.all([
    all('schools'),
    all('beneficiaries'),
    all('teachers'),
    all('staff'),
    all('posyandu'),
-   all('posyandu_recipients')
+   all('posyandu_recipients'),
+   pmRecordsAsOf(period.end)
  ]);
 
  const isActive=x=>String(x?.status||'').trim().toLowerCase()==='aktif';
  const active=x=>x.filter(isActive);
 
  const activeSchools=active(s);
- const activeStudents=active(st);
- const activeTeachers=active(t);
- const activeStaff=active(staff);
+ const activeStudents=active(pmPeriod.filter(x=>x.__store==='beneficiaries'));
+ const activeTeachers=active(pmPeriod.filter(x=>x.__store==='teachers'));
+ const activeStaff=active(pmPeriod.filter(x=>x.__store==='staff'));
  const activePosyandu=active(p);
- const activePosRecipients=active(pr);
+ const activePosRecipients=active(pmPeriod.filter(x=>x.__store==='posyandu_recipients'));
+ const periodEl=document.getElementById('dashboardPeriod');
+ const periodInput=document.getElementById('dashboardPeriodDate');
+ if(periodInput) periodInput.value=selectedDate;
+ if(periodEl){
+   const todayPeriod=weeklyPeriod(dayISO());
+   const relation=period.start===todayPeriod.start?'Periode sekarang':(period.start<todayPeriod.start?'Periode sebelumnya':'Periode berikutnya');
+   periodEl.textContent=relation+' • Senin '+formatDateID(period.start)+' s.d. Minggu '+formatDateID(period.end);
+ }
 
  statSchools.textContent=activeSchools.length;
  statStudents.textContent=activeStudents.length;
@@ -1499,16 +1654,17 @@ async function dashboard(){
        <td><b>${balita+bumil+busui}</b></td>
      </tr>`;
    });
+   // Baris TOTAL Ringkasan Posyandu: jumlah Balita, Bumil, Busui, dan Total PM
    const totalBalita=activePosRecipientsValid.filter(a=>typeOf(a)==='balita').length;
    const totalBumil=activePosRecipientsValid.filter(a=>typeOf(a)==='bumil').length;
    const totalBusui=activePosRecipientsValid.filter(a=>typeOf(a)==='busui').length;
-   const totalPosPM=totalBalita+totalBumil+totalBusui;
-   posRows.push(`<tr class="summary-total-row">
-     <td colspan="4" style="text-align:right;font-weight:700">TOTAL</td>
+   const totalPMPos=totalBalita+totalBumil+totalBusui;
+   posRows.push(`<tr class="total-row">
+     <td colspan="4" style="text-align:right"><b>TOTAL</b></td>
      <td><b>${totalBalita}</b></td>
      <td><b>${totalBumil}</b></td>
      <td><b>${totalBusui}</b></td>
-     <td><b>${totalPosPM}</b></td>
+     <td><b>${totalPMPos}</b></td>
    </tr>`);
    dashPos.innerHTML=table(['No','Kode','Posyandu','Lokasi','Balita','Bumil','Busui','Total PM'],posRows);
  }
@@ -1565,10 +1721,12 @@ async function renderRekap(){
 
  const dateEl=document.getElementById('rekapDate');
  const dateTitle=document.getElementById('rekapDateTitle');
- if(dateTitle)dateTitle.textContent='Tanggal '+rekapDateDisplay(dateEl?.value);
+ if(dateTitle)dateTitle.textContent='Periode '+weeklyPeriod(dateEl?.value||dayISO()).label;
 
+ const selected=dateEl?.value||dayISO();
+ const period=weeklyPeriod(selected);
  const [schools,posyandu,pmAtDate]=await Promise.all([
-   all('schools'),all('posyandu'),pmRecordsAsOf(dateEl?.value||dayISO())
+   all('schools'),all('posyandu'),pmRecordsAsOf(period.end)
  ]);
  const students=pmAtDate.filter(x=>x.__store==='beneficiaries');
  const teachers=pmAtDate.filter(x=>x.__store==='teachers');
@@ -1699,41 +1857,83 @@ function formatDateTimeID(v){
  if(Number.isNaN(d.getTime()))return String(v);
  return d.toLocaleString('id-ID',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
 }
+function historyEventLabel(e){
+ return e.eventType==='input'?'Input Baru':
+        e.eventType==='delete'?'Hapus Terbaru':
+        e.eventType==='status_change'?'Perubahan Status':
+        e.eventType==='school_edit'?'Edit Sekolah':'Aktivitas';
+}
+function historyActivityKey(x){
+ const store=x.sourceStore||'';
+ const id=x.sourceId||'';
+ // Import lama memakai sourceId="import" untuk banyak baris, jadi gunakan identitas sebagai pembeda.
+ if(id && id!=='import') return `${x.eventType||''}|${store}|${id}`;
+ return `${x.eventType||''}|${store}|${String(x.identity||'').trim().toLowerCase()}|${String(x.pmType||'').trim().toLowerCase()}|${String(x.name||'').trim().toLowerCase()}`;
+}
+function makeLegacyInput(record,store,pmType,location){
+ const ts=record.createdAt||record.updatedAt;
+ if(!ts)return null;
+ return {
+  id:`legacy-${store}-${record.id}`,
+  eventType:'input',
+  sourceStore:store,
+  sourceId:record.id,
+  name:record.name||record.schoolName||'-',
+  identity:record.identityNumber||record.nisn||record.nis||record.npsn||record.code||'-',
+  pmType,
+  location:location||'-',
+  status:record.status||'-',
+  previousStatus:'',
+  newStatus:record.status||'',
+  changedAt:ts,
+  legacy:true
+ };
+}
+async function buildAllHistoryActivities(){
+ const [activities,beneficiaries,teachers,staff,posRecipients,schools,posyandu]=await Promise.all([
+  all('pm_activity').catch(()=>[]),
+  all('beneficiaries').catch(()=>[]),
+  all('teachers').catch(()=>[]),
+  all('staff').catch(()=>[]),
+  all('posyandu_recipients').catch(()=>[]),
+  all('schools').catch(()=>[]),
+  all('posyandu').catch(()=>[])
+ ]);
+ const schoolMap=new Map(schools.map(x=>[x.id,x.name||'-']));
+ const posMap=new Map(posyandu.map(x=>[x.id,x.name||'-']));
+ const result=[...(activities||[])];
+ const known=new Set(result.filter(x=>x.eventType==='input').map(historyActivityKey));
+ const addLegacy=(records,store,typeFn,locationFn)=>{
+  for(const r of (records||[])){
+   const item=makeLegacyInput(r,store,typeFn(r),locationFn(r));
+   if(!item)continue;
+   const key=historyActivityKey(item);
+   if(!known.has(key)){
+    result.push(item);
+    known.add(key);
+   }
+  }
+ };
+ addLegacy(beneficiaries,'beneficiaries',r=>activityPMType('beneficiaries',r),r=>schoolMap.get(r.schoolId)||'-');
+ addLegacy(teachers,'teachers',()=> 'Guru',r=>schoolMap.get(r.schoolId)||'-');
+ addLegacy(staff,'staff',()=> 'Tenaga Kependidikan',r=>schoolMap.get(r.schoolId)||'-');
+ addLegacy(posRecipients,'posyandu_recipients',r=>String(r.recipientType||r.jenisPenerima||'-'),r=>posMap.get(r.posyanduId)||'-');
+ addLegacy(schools,'schools',()=> 'Sekolah',r=>r.name||'-');
+ return result;
+}
 async function renderPMHistory(){
  try{
-  // Aktivitas yang memang dicatat oleh aplikasi.
-  const activitiesRaw=await all('pm_activity').catch(()=>[]);
-  // Fallback untuk data lama: tampilkan input awal berdasarkan createdAt,
-  // sehingga riwayat tidak kosong walaupun fitur pm_activity baru dipasang.
-  const currentLists=await Promise.all(PM_STORES.map(store=>all(store).catch(()=>[])));
-  const schools=await all('schools').catch(()=>[]);
-  const inferred=[];
-  const schoolMap=new Map(schools.map(x=>[x.id,x]));
-  PM_STORES.forEach((store,idx)=>{
-    (currentLists[idx]||[]).forEach(x=>{
-      const exists=activitiesRaw.some(a=>a.sourceStore===store&&a.sourceId===x.id&&a.eventType==='input');
-      if(exists)return;
-      const changed=x.createdAt||x.updatedAt;
-      if(!changed)return;
-      let location='-';
-      if(store==='beneficiaries'||store==='teachers'||store==='staff') location=schoolMap.get(x.schoolId)?.name||'-';
-      else if(store==='posyandu_recipients') location='Posyandu';
-      inferred.push({eventType:'input',sourceStore:store,sourceId:x.id,name:x.name||'-',identity:x.identityNumber||x.nisn||x.nis||'-',pmType:activityPMType(store,x),location,status:x.status||'-',changedAt:changed,inferred:true});
-    });
-  });
-  schools.forEach(x=>{
-    const exists=activitiesRaw.some(a=>a.sourceStore==='schools'&&a.sourceId===x.id&&(a.eventType==='input'||a.eventType==='school_edit'));
-    if(!exists && (x.createdAt||x.updatedAt)) inferred.push({eventType:'input',sourceStore:'schools',sourceId:x.id,name:x.name||'-',identity:x.npsn||x.code||'-',pmType:'Sekolah',location:x.address||'-',status:x.status||'-',changedAt:x.createdAt||x.updatedAt,inferred:true});
-  });
-  const activities=[...activitiesRaw,...inferred];
+  // Riwayat tidak dibatasi periode/hari. Gabungkan aktivitas yang tercatat
+  // dengan input lama yang belum memiliki record di pm_activity.
+  const activities=await buildAllHistoryActivities();
   const q=(document.getElementById('historyPMSearch')?.value||'').toLowerCase().trim();
   const typ=(document.getElementById('historyPMType')?.value||'').trim();
-  const eventLabel=e=>e.eventType==='input'?'Input Baru':e.eventType==='delete'?'Hapus Terbaru':e.eventType==='status_change'?'Perubahan Status':e.eventType==='school_edit'?'Edit Sekolah':'Aktivitas';
   const filtered=activities
-   .sort((a,b)=>(Date.parse(b.changedAt)||0)-(Date.parse(a.changedAt)||0))
+   .sort((a,b)=>(Date.parse(b.changedAt||b.createdAt||'')||0)-(Date.parse(a.changedAt||a.createdAt||'')||0))
    .filter(x=>{
      const typeMatch=!typ || x.pmType===typ || (typ==='Sekolah'&&x.pmType==='Sekolah');
-     const hay=[x.identity,x.name,x.location,x.pmType,eventLabel(x),x.status,x.previousStatus,x.newStatus].filter(Boolean).join(' ').toLowerCase();
+     const label=historyEventLabel(x);
+     const hay=[x.identity,x.name,x.location,x.pmType,label,x.status,x.previousStatus,x.newStatus].filter(Boolean).join(' ').toLowerCase();
      return typeMatch&&(!q||hay.includes(q));
    });
   const size=Number(document.getElementById('historyPMPageSize')?.value||20);
@@ -1743,16 +1943,16 @@ async function renderPMHistory(){
   const pageRows=filtered.slice(start,start+size);
   const target=document.getElementById('pmHistoryTable'); if(!target)return;
   target.innerHTML=table(['No','Tanggal / Jam','Aktivitas','NIS / NIK / NPSN','Nama','Jenis','Sekolah / Posyandu','Status'],pageRows.map((x,i)=>{
-    const label=eventLabel(x);
+    const label=historyEventLabel(x);
     const statusText=x.eventType==='status_change' ? `${x.previousStatus||'-'} → ${x.newStatus||'-'}` : (x.eventType==='delete'?'DIHAPUS':(x.status||'-'));
-    return `<tr><td>${start+i+1}</td><td>${esc(formatDateTimeID(x.changedAt))}</td><td><b>${esc(label)}</b></td><td>${esc(x.identity||'-')}</td><td>${esc(x.name||'-')}</td><td>${esc(x.pmType||'-')}</td><td>${esc(x.location||'-')}</td><td>${esc(statusText)}</td></tr>`;
+    return `<tr><td>${start+i+1}</td><td>${esc(formatDateTimeID(x.changedAt||x.createdAt))}</td><td><b>${esc(label)}</b></td><td>${esc(x.identity||'-')}</td><td>${esc(x.name||'-')}</td><td>${esc(x.pmType||'-')}</td><td>${esc(x.location||'-')}</td><td>${esc(statusText)}</td></tr>`;
   }));
   const pEl=document.getElementById('pmHistoryPagination');
   const from=filtered.length?start+1:0, to=Math.min(start+size,filtered.length);
-  let buttons=''; const add=(p,label,disabled,active)=>buttons+=`<button class="page-btn ${active?'active':''}" ${disabled?'disabled':''} onclick="historyPMPage=${p};renderPMHistory()">${label}</button>`;
+  let buttons=''; const add=(pg,label,disabled,active)=>buttons+=`<button class="page-btn ${active?'active':''}" ${disabled?'disabled':''} onclick="historyPMPage=${pg};renderPMHistory()">${label}</button>`;
   add(Math.max(1,historyPMPage-1),'‹',historyPMPage===1,false);
   let pf=Math.max(1,historyPMPage-2),pt=Math.min(pages,pf+4); if(pt-pf<4)pf=Math.max(1,pt-4);
-  for(let p=pf;p<=pt;p++)add(p,p,false,p===historyPMPage);
+  for(let pg=pf;pg<=pt;pg++)add(pg,pg,false,pg===historyPMPage);
   add(Math.min(pages,historyPMPage+1),'›',historyPMPage===pages,false);
   pEl.innerHTML=`<div class="pagination-info">Menampilkan ${from}-${to} dari ${filtered.length} aktivitas</div><div class="pagination-buttons">${buttons}</div>`;
  }catch(err){
@@ -1761,9 +1961,9 @@ async function renderPMHistory(){
  }
 }
 
-async function refresh(){await repairPosyanduRecipientData();await fillSchoolFilters();await dashboard();if(document.getElementById('schools').classList.contains('active'))renderSchools();if(document.getElementById('students')?.classList.contains('active'))renderStudents();if(document.getElementById('teachers').classList.contains('active'))renderTeachers();if(document.getElementById('staff').classList.contains('active'))renderStaff();if(document.getElementById('posyandu').classList.contains('active')){renderPosyandu();renderPosyanduRecipients()}if(document.getElementById('rekap')?.classList.contains('active'))renderRekap();if(document.getElementById('riwayatPM')?.classList.contains('active'))renderPMHistory()}
+async function refresh(){await repairPosyanduRecipientData();await repairTodayPMEffectiveDates();await fillSchoolFilters();await dashboard();if(document.getElementById('schools').classList.contains('active'))renderSchools();if(document.getElementById('students')?.classList.contains('active'))renderStudents();if(document.getElementById('teachers').classList.contains('active'))renderTeachers();if(document.getElementById('staff').classList.contains('active'))renderStaff();if(document.getElementById('posyandu').classList.contains('active')){renderPosyandu();renderPosyanduRecipients()}if(document.getElementById('rekap')?.classList.contains('active'))renderRekap();if(document.getElementById('riwayatPM')?.classList.contains('active'))renderPMHistory()}
 
-setTimeout(setDefaultRekapDate,0);
+setTimeout(()=>{setDefaultRekapDate();renderPMHistory()},0);
 
 function downloadStudentTemplate(){
  if(typeof XLSX==='undefined'){alert('Fitur Excel membutuhkan koneksi internet saat pertama kali digunakan.');return}

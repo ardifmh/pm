@@ -107,6 +107,7 @@ button,input,select{font:inherit}.app{display:flex;min-height:100vh}
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
 
 <style id="school-pdf-style">
@@ -207,6 +208,13 @@ button,input,select{font:inherit}.app{display:flex;min-height:100vh}
   <div><div class="stat-label">Total PM Keseluruhan</div><div class="stat-value" id="statPMTotal">0</div></div>
  </div>
 <div class="card" style="grid-column:span 2"><b>Struktur Data</b><p class="muted">Sekolah menjadi induk siswa, guru, dan tenaga kependidikan. B3/Posyandu dikelola sebagai kelompok penerima manfaat tersendiri.</p></div>
+  </div>
+  <div class="section card" id="dashboardDownloadCard">
+    <div class="section-head"><div><h2>Unduh Data Lengkap</h2><p class="muted">Unduh PDF detail setiap sekolah atau Posyandu dalam satu file ZIP.</p></div></div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+      <button class="btn btn-success" type="button" onclick="downloadSchoolsZip(this)">⬇ PDF Semua Sekolah (ZIP)</button>
+      <button class="btn btn-success" type="button" onclick="downloadPosyanduZip(this)">⬇ PDF Semua Posyandu (ZIP)</button>
+    </div>
   </div>
   <div class="section card" id="dashboardPosyanduCard">
     <div class="section-head"><h2>Ringkasan Posyandu</h2><button class="btn btn-secondary" onclick="showPage('posyandu',document.querySelector('.nav button:nth-of-type(8)'))">Kelola Posyandu</button></div>
@@ -935,8 +943,8 @@ async function renderSchools(){
 async function downloadAllSchoolsPDF(){
  try{
   if(!window.jspdf || !window.jspdf.jsPDF){
-   alert('Fitur PDF belum tersedia. Pastikan koneksi internet aktif, lalu coba lagi.');
-   return;
+   if(!returnBlob) alert('Fitur PDF belum tersedia. Pastikan koneksi internet aktif, lalu coba lagi.');
+   return null;
   }
 
   const [schools,students,teachers,staff]=await Promise.all([
@@ -1020,7 +1028,7 @@ async function downloadAllSchoolsPDF(){
  }
 }
 
-async function downloadSchoolPDF(schoolId){
+async function downloadSchoolPDF(schoolId, returnBlob=false){
  try{
   if(!window.jspdf || !window.jspdf.jsPDF){
    alert('Fitur PDF belum tersedia. Pastikan koneksi internet aktif, lalu coba lagi.');
@@ -1032,7 +1040,7 @@ async function downloadSchoolPDF(schoolId){
   ]);
 
   const school=schools.find(x=>x.id===schoolId);
-  if(!school){alert('Data sekolah tidak ditemukan.');return;}
+  if(!school){if(!returnBlob)alert('Data sekolah tidak ditemukan.');return null;}
 
   const isActive=x=>String(x?.status||'').trim().toLowerCase()==='aktif';
   const portion=x=>String(x?.portionType||x?.jenisPorsi||x?.portion||'').trim();
@@ -1175,10 +1183,13 @@ async function downloadSchoolPDF(schoolId){
     .trim()
     .substring(0,80);
 
+  if(returnBlob) return doc.output('blob');
   doc.save(`Detail-${safeName}.pdf`);
+  return true;
  }catch(err){
   console.error('PDF sekolah:',err);
-  alert('Gagal membuat PDF sekolah:\\n\\n'+(err?.message||err));
+  if(!returnBlob) alert('Gagal membuat PDF sekolah:\n\n'+(err?.message||err));
+  return null;
  }
 }
 
@@ -1229,21 +1240,25 @@ function renderPosRecipientPagination(total){
  el.innerHTML=`<div class="pagination-info">Menampilkan ${start}-${end} dari ${total} penerima</div><div class="pagination-buttons">${b}</div>`;
 }
 
-async function downloadPosyanduPDF(posyanduId){
+async function downloadPosyanduPDF(posyanduId, returnBlob=false){
  try{
-  if(!window.jspdf?.jsPDF){alert('Fitur PDF belum tersedia. Pastikan koneksi internet aktif.');return;}
+  if(!window.jspdf?.jsPDF){if(!returnBlob)alert('Fitur PDF belum tersedia. Pastikan koneksi internet aktif.');return null;}
   const [plist,recipients]=await Promise.all([all('posyandu'),all('posyandu_recipients')]);
   const pos=plist.find(x=>x.id===posyanduId);
-  if(!pos){alert('Data Posyandu tidak ditemukan.');return;}
+  if(!pos){if(!returnBlob)alert('Data Posyandu tidak ditemukan.');return null;}
 
   const active=x=>String(x?.status||'').trim().toLowerCase()==='aktif';
   const type=x=>String(x?.recipientType||x?.jenisPenerima||'').trim().toLowerCase();
   const gender=x=>String(x?.genderCode||x?.gender||'')==='64'?'Perempuan':String(x?.genderCode||x?.gender||'')==='392'?'Laki-laki':(x?.gender||'-');
   const rows=recipients.filter(x=>x.posyanduId===posyanduId);
   const data=rows.filter(active);
-  const balita=data.filter(x=>type(x)==='balita');
-  const bumil=data.filter(x=>type(x)==='bumil');
-  const busui=data.filter(x=>type(x)==='busui');
+  // Ringkasan tetap menghitung PM aktif, sedangkan tabel rincian memuat seluruh data termasuk tidak aktif.
+  const balitaAktif=data.filter(x=>type(x)==='balita');
+  const bumilAktif=data.filter(x=>type(x)==='bumil');
+  const busuiAktif=data.filter(x=>type(x)==='busui');
+  const balita=rows.filter(x=>type(x)==='balita');
+  const bumil=rows.filter(x=>type(x)==='bumil');
+  const busui=rows.filter(x=>type(x)==='busui');
   const kecil=data.filter(x=>String(x.portionType||'').toLowerCase()==='kecil').length;
   const besar=data.filter(x=>String(x.portionType||'').toLowerCase()==='besar').length;
 
@@ -1272,7 +1287,7 @@ async function downloadPosyanduPDF(posyanduId){
   doc.setFont('helvetica','bold');doc.setFontSize(11);doc.text('Ringkasan Penerima Manfaat Aktif',14,y);
   doc.autoTable({
    startY:y+3,head:[['Balita','Bumil','Busui','Porsi Kecil','Porsi Besar','Total PM']],
-   body:[[balita.length,bumil.length,busui.length,kecil,besar,data.length]],
+   body:[[balitaAktif.length,bumilAktif.length,busuiAktif.length,kecil,besar,data.length]],
    theme:'grid',styles:{fontSize:9,cellPadding:2.5,halign:'center'},headStyles:{fontStyle:'bold'},margin:{left:14,right:14}
   });
   y=doc.lastAutoTable.finalY+7;
@@ -1294,9 +1309,62 @@ async function downloadPosyanduPDF(posyanduId){
   addTable('Daftar Busui',busui);
 
   const safe=String(pos.name||'Posyandu').replace(/[\\/:*?"<>|]+/g,' ').replace(/\s+/g,' ').trim().substring(0,80);
+  if(returnBlob) return doc.output('blob');
   doc.save(`Detail-Posyandu-${safe}.pdf`);
- }catch(err){console.error(err);alert('Gagal membuat PDF Posyandu:\n\n'+(err?.message||err));}
+  return true;
+ }catch(err){console.error(err);if(!returnBlob)alert('Gagal membuat PDF Posyandu:\n\n'+(err?.message||err));return null;}
 }
+function safeZipName(value, fallback){
+ return String(value||fallback).replace(/[\\/:*?"<>|]+/g,' ').replace(/\s+/g,' ').trim().slice(0,90)||fallback;
+}
+async function downloadSchoolsZip(button){
+ const original=button?.textContent;
+ try{
+  if(!window.JSZip){alert('Fitur ZIP belum tersedia. Pastikan internet aktif lalu muat ulang aplikasi.');return;}
+  if(!window.jspdf?.jsPDF){alert('Fitur PDF belum tersedia. Pastikan internet aktif lalu muat ulang aplikasi.');return;}
+  if(button){button.disabled=true;button.textContent='Mengumpulkan PDF sekolah ke ZIP...';}
+  const schools=(await all('schools')).sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''),'id'));
+  if(!schools.length){alert('Belum ada data sekolah untuk dibuatkan PDF.');return;}
+  const zip=new JSZip();
+  let done=0, failed=[];
+  for(const school of schools){
+   if(button)button.textContent=`Memasukkan PDF sekolah ${++done}/${schools.length} ke ZIP...`;
+   const blob=await downloadSchoolPDF(school.id,true);
+   if(blob)zip.file(`${String(done).padStart(3,'0')}-${safeZipName(school.name,'Sekolah')}.pdf`,blob);
+   else failed.push(school.name||school.id);
+  }
+  if(!Object.keys(zip.files).length){alert('Tidak ada PDF sekolah yang berhasil dibuat.');return;}
+  if(failed.length)zip.file('CATATAN.txt','PDF gagal dibuat untuk sekolah berikut:\n'+failed.join('\n'));
+  const content=await zip.generateAsync({type:'blob',compression:'DEFLATE',compressionOptions:{level:5}});
+  const url=URL.createObjectURL(content),a=document.createElement('a');a.href=url;a.download=`Rekap-Detail-Semua-Sekolah-${new Date().toISOString().slice(0,10)}.zip`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);
+  if(failed.length)alert(`ZIP selesai. ${Object.keys(zip.files).length-(failed.length?1:0)} PDF berhasil; ${failed.length} sekolah gagal (daftar ada di CATATAN.txt).`);
+ }catch(err){console.error(err);alert('Gagal membuat ZIP sekolah: '+(err?.message||err));}
+ finally{if(button){button.disabled=false;button.textContent=original||'⬇ PDF Semua Sekolah (ZIP)';}}
+}
+async function downloadPosyanduZip(button){
+ const original=button?.textContent;
+ try{
+  if(!window.JSZip){alert('Fitur ZIP belum tersedia. Pastikan internet aktif lalu muat ulang aplikasi.');return;}
+  if(!window.jspdf?.jsPDF){alert('Fitur PDF belum tersedia. Pastikan internet aktif lalu muat ulang aplikasi.');return;}
+  if(button){button.disabled=true;button.textContent='Membuat PDF Posyandu...';}
+  const posyandus=(await all('posyandu')).sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''),'id'));
+  if(!posyandus.length){alert('Belum ada data Posyandu untuk dibuatkan PDF.');return;}
+  const zip=new JSZip();let done=0,failed=[];
+  for(const pos of posyandus){
+   if(button)button.textContent=`Membuat PDF Posyandu ${++done}/${posyandus.length}...`;
+   const blob=await downloadPosyanduPDF(pos.id,true);
+   if(blob)zip.file(`${String(done).padStart(3,'0')}-${safeZipName(pos.name,'Posyandu')}.pdf`,blob);
+   else failed.push(pos.name||pos.id);
+  }
+  if(!Object.keys(zip.files).length){alert('Tidak ada PDF Posyandu yang berhasil dibuat.');return;}
+  if(failed.length)zip.file('CATATAN.txt','PDF gagal dibuat untuk Posyandu berikut:\n'+failed.join('\n'));
+  const content=await zip.generateAsync({type:'blob',compression:'DEFLATE',compressionOptions:{level:5}});
+  const url=URL.createObjectURL(content),a=document.createElement('a');a.href=url;a.download=`Rekap-Detail-Semua-Posyandu-${new Date().toISOString().slice(0,10)}.zip`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);
+  if(failed.length)alert(`ZIP selesai. ${posyandus.length-failed.length} PDF berhasil; ${failed.length} Posyandu gagal (daftar ada di CATATAN.txt).`);
+ }catch(err){console.error(err);alert('Gagal membuat ZIP Posyandu: '+(err?.message||err));}
+ finally{if(button){button.disabled=false;button.textContent=original||'⬇ PDF Semua Posyandu (ZIP)';}}
+}
+
 async function renderPosyanduRecipients(){
  let [a,p]=await Promise.all([all('posyandu_recipients'),all('posyandu')]);
 

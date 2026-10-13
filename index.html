@@ -460,36 +460,45 @@ async function put(store,obj){
  const clean={...obj};delete clean.id;await ref.set(clean,{merge:true});
 }
 async function del(store,id){
- if(!confirm('Hapus data ini? Data yang dihapus tidak dapat dikembalikan kecuali dari backup.'))return;
+ if(!confirm(PM_STORES.includes(store)
+   ? 'Jadwalkan penghapusan PM mulai periode Senin berikutnya? Data tetap dihitung pada periode berjalan.'
+   : 'Hapus data ini? Data yang dihapus tidak dapat dikembalikan kecuali dari backup.'))return;
  const ref=db.collection(store).doc(id); const snap=await ref.get();
  if(!snap.exists){toast('Data tidak ditemukan');return}
  const existing={id:snap.id,...snap.data()};
- if(PM_STORES.includes(store)){
-   const today=dayISO();
-   const oldEffective=String(existing.effectiveFrom||existing.updatedAt||existing.createdAt||today).slice(0,10);
-   // Hapus PM berlaku langsung. Simpan snapshot lama agar periode sebelum penghapusan tetap utuh.
-   if(oldEffective<=today){
-     const hist={...existing}; delete hist.id;
-     await db.collection('pm_history').doc(uid('H')).set({
-       sourceStore:store,sourceId:id,effectiveFrom:oldEffective,effectiveTo:previousDayISO(today),
-       snapshot:hist,createdAt:new Date().toISOString(),reason:'delete'
-     });
-   }
- }
- await db.collection(store).doc(id).delete();
  let location='-';
  if(store==='beneficiaries'||store==='teachers'||store==='staff'){
    const schools=await all('schools').catch(()=>[]); location=schools.find(x=>x.id===existing.schoolId)?.name||'-';
  }else if(store==='posyandu_recipients'){
    const pos=await all('posyandu').catch(()=>[]); location=pos.find(x=>x.id===existing.posyanduId)?.name||'-';
  }
- await logPMActivity({
-   eventType:'delete', sourceStore:store, sourceId:id, name:existing.name||'-',
-   identity:existing.identityNumber||existing.nisn||existing.nis||existing.npsn||'-',
-   pmType:store==='schools'?'Sekolah':activityPMType(store,existing), location,
-   status:existing.status||'-', previousStatus:existing.status||'', newStatus:'Dihapus', snapshot:existing
- });
- toast('Data berhasil dihapus');
+ if(PM_STORES.includes(store)){
+   // Penghapusan PM tidak lagi instan: data tetap berlaku sampai akhir periode berjalan,
+   // lalu dikeluarkan dari snapshot mulai Senin berikutnya.
+   const nextMonday=nextMondayISO(dayISO());
+   if(existing.pendingDeleteFrom && String(existing.pendingDeleteFrom).slice(0,10)<=nextMonday){
+     toast('Penghapusan PM sudah dijadwalkan mulai '+formatDateID(existing.pendingDeleteFrom));
+     return;
+   }
+   await ref.set({pendingDeleteFrom:nextMonday,deleteRequestedAt:new Date().toISOString()},{merge:true});
+   await logPMActivity({
+     eventType:'delete', sourceStore:store, sourceId:id, name:existing.name||'-',
+     identity:existing.identityNumber||existing.nisn||existing.nis||existing.npsn||'-',
+     pmType:activityPMType(store,existing), location,
+     status:existing.status||'-', previousStatus:existing.status||'', newStatus:'Dihapus mulai '+formatDateID(nextMonday), snapshot:existing,
+     effectiveFrom:nextMonday
+   });
+   toast('Penghapusan dijadwalkan mulai '+formatDateID(nextMonday));
+ }else{
+   await ref.delete();
+   await logPMActivity({
+     eventType:'delete', sourceStore:store, sourceId:id, name:existing.name||'-',
+     identity:existing.identityNumber||existing.nisn||existing.nis||existing.npsn||'-',
+     pmType:store==='schools'?'Sekolah':activityPMType(store,existing), location,
+     status:existing.status||'-', previousStatus:existing.status||'', newStatus:'Dihapus', snapshot:existing
+   });
+   toast('Data berhasil dihapus');
+ }
  await refresh();
 }
 
@@ -527,7 +536,11 @@ async function pmRecordsAsOf(date){
        byId.set(h.sourceStore+'|'+h.sourceId,{...(h.snapshot||{}),id:h.sourceId,__store:h.sourceStore});
      }
    });
- return [...byId.values()].filter(x=>String(x.effectiveFrom||x.createdAt||'0000-01-01').slice(0,10)<=target);
+ return [...byId.values()].filter(x=>{
+   const from=String(x.effectiveFrom||x.createdAt||'0000-01-01').slice(0,10);
+   const pendingDelete=String(x.pendingDeleteFrom||'9999-12-31').slice(0,10);
+   return from<=target && target<pendingDelete;
+ });
 }
 function periodRecordsFor(date){
  // Rekap periode menggunakan kondisi yang berlaku pada Senin awal periode.

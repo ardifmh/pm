@@ -161,6 +161,11 @@ button,input,select{font:inherit}.app{display:flex;min-height:100vh}
 #pmYearCalendar .pm-day{box-sizing:border-box;width:100%;min-width:0;min-height:55px;border:1px solid #e8edf4;border-radius:0;background:#fff;color:#243247;padding:5px 2px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:5px;font-size:12px;cursor:pointer;font-family:inherit;line-height:1.2}
 #pmYearCalendar .pm-day:hover{background:#eff6ff;outline:2px solid #60a5fa;outline-offset:-2px;position:relative}
 #pmYearCalendar .pm-day .pm-count{font-size:10px;font-weight:800;color:#1d4ed8;white-space:normal;line-height:1.15;text-align:center}
+#pmYearCalendar .pm-day .pm-notification{position:absolute;top:3px;right:4px;min-width:15px;height:15px;padding:0 3px;border-radius:99px;background:#dc2626;color:#fff;font-size:9px;font-weight:900;line-height:15px;text-align:center;box-shadow:0 0 0 2px #fff}
+#pmYearCalendar .pm-day.has-update{position:relative;border-color:#fca5a5;background:#fff7f7}
+#pmYearCalendar .pm-day.has-update .pm-count{color:#b91c1c}
+#pmYearCalendar .pm-calendar-legend{display:flex;align-items:center;gap:7px;font-size:12px;color:#64748b;margin:0 0 10px}
+#pmYearCalendar .pm-calendar-legend .dot{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;background:#dc2626;color:#fff;font-size:10px;font-weight:800}
 #pmYearCalendar .pm-day.has-pm{background:#eff6ff}
 #pmYearCalendar .pm-day.zero-pm{background:#fff;color:#94a3b8}
 #pmYearCalendar .pm-day.today{box-shadow:inset 0 0 0 2px #f59e0b;background:#fffbeb}
@@ -2103,11 +2108,13 @@ async function renderPMYearCalendar(){
  host.innerHTML='<div class="muted">Menghitung jumlah PM harian...</div>';
  try{
    // Satu pengambilan data per render, lalu gunakan fungsi snapshot periode yang sama dengan Dashboard.
-   const [current,history,schools,posyandu]=await Promise.all([Promise.all(PM_STORES.map(all)),all('pm_history').catch(()=>[]),all('schools'),all('posyandu')]);
+   const [current,history,schools,posyandu,activityRows]=await Promise.all([Promise.all(PM_STORES.map(all)),all('pm_history').catch(()=>[]),all('schools'),all('posyandu'),all('pm_activity').catch(()=>[])]);
    if(token!==pmCalendarRenderToken)return;
    const schoolMap=new Map(schools.map(x=>[x.id,x])),posMap=new Map(posyandu.map(x=>[x.id,x]));
    const isActive=x=>String(x?.status||'').trim().toLowerCase()==='aktif';
    const countsByDate={};const today=dayISO();
+   const activityCountsByDate={};
+   activityRows.forEach(a=>{const stamp=String(a.changedAt||a.createdAt||a.timestamp||a.date||'').slice(0,10);if(stamp && /^\d{4}-\d{2}-\d{2}$/.test(stamp)){activityCountsByDate[stamp]=(activityCountsByDate[stamp]||0)+1;}});
    for(let m=0;m<12;m++)for(let d=1;d<=new Date(pmCalendarYear,m+1,0).getDate();d++){
      const iso=`${pmCalendarYear}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
      const pm=pmRecordsAsOfData(iso,current,history).filter(x=>isActive(x)&&(
@@ -2120,12 +2127,14 @@ async function renderPMYearCalendar(){
    }
    const months=['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
    const wd=['Min','Sen','Sel','Rab','Kam','Jum','Sab'];
-   host.innerHTML=months.map((month,m)=>{
+   host.innerHTML='<div class="pm-calendar-legend"><span class="dot">!</span> Tanggal bertanda merah memiliki aktivitas update PM</div>'+months.map((month,m)=>{
      const first=new Date(pmCalendarYear,m,1).getDay(),days=new Date(pmCalendarYear,m+1,0).getDate();let cells='';
      for(let i=0;i<first;i++)cells+='<div class="pm-day empty" aria-hidden="true"></div>';
      for(let d=1;d<=days;d++){const iso=`${pmCalendarYear}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`,count=countsByDate[iso]||0;
-       const cls=['pm-day',count?'has-pm':'zero-pm',iso===today?'today':'',iso>today?'future':''].filter(Boolean).join(' ');
-       cells+=`<button type="button" class="${cls}" title="Klik untuk ringkasan PM ${iso}" onclick="openPMCalendarDate('${iso}')"><span>${d}</span><span class="pm-count">${count.toLocaleString('id-ID')} PM</span></button>`;
+       const updates=activityCountsByDate[iso]||0;
+       const cls=['pm-day',count?'has-pm':'zero-pm',updates?'has-update':'',iso===today?'today':'',iso>today?'future':''].filter(Boolean).join(' ');
+       const notice=updates?`<span class="pm-notification" aria-label="${updates} aktivitas PM">${updates>99?'99+':updates}</span>`:'';
+       cells+=`<button type="button" class="${cls}" title="${updates?updates+' update PM. ':''}Klik untuk ringkasan PM ${iso}" onclick="openPMCalendarDate('${iso}')"><span>${d}</span>${notice}<span class="pm-count">${count.toLocaleString('id-ID')} PM</span></button>`;
      }
      return `<div class="pm-month"><div class="pm-month-title">${month} ${pmCalendarYear}</div><div class="pm-month-days">${wd.map(x=>`<div class="pm-weekday">${x}</div>`).join('')}${cells}</div></div>`;
    }).join('');

@@ -149,6 +149,52 @@ button,input,select{font:inherit}.app{display:flex;min-height:100vh}
 .btn-pdf{background:#e8f5e9!important;color:#166534!important;border:1px solid #bbf7d0!important}
 .btn-pdf:hover{background:#dcfce7!important}
 </style>
+
+<style>
+/* Kalender PM tahunan: tata letak kalender sungguhan */
+#pmYearCalendarCard{padding:18px}
+#pmYearCalendar.pm-year-grid{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;align-items:start}
+#pmYearCalendar .pm-month{display:block!important;min-width:0;background:#fff;border:1px solid #dbe4f0;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(15,23,42,.05)}
+#pmYearCalendar .pm-month-title{display:block;text-align:center;font-weight:800;font-size:15px;color:#fff;background:#17478e;padding:12px 8px;margin:0}
+#pmYearCalendar .pm-month-days{display:grid!important;grid-template-columns:repeat(7,minmax(0,1fr));gap:0;padding:8px}
+#pmYearCalendar .pm-weekday{display:block;text-align:center;font-size:11px;font-weight:800;color:#64748b;padding:8px 0;background:#f1f5f9}
+#pmYearCalendar .pm-day{box-sizing:border-box;width:100%;min-width:0;min-height:55px;border:1px solid #e8edf4;border-radius:0;background:#fff;color:#243247;padding:5px 2px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:5px;font-size:12px;cursor:pointer;font-family:inherit;line-height:1.2}
+#pmYearCalendar .pm-day:hover{background:#eff6ff;outline:2px solid #60a5fa;outline-offset:-2px;position:relative}
+#pmYearCalendar .pm-day .pm-count{font-size:10px;font-weight:800;color:#1d4ed8;white-space:normal;line-height:1.15;text-align:center}
+#pmYearCalendar .pm-day.has-pm{background:#eff6ff}
+#pmYearCalendar .pm-day.zero-pm{background:#fff;color:#94a3b8}
+#pmYearCalendar .pm-day.today{box-shadow:inset 0 0 0 2px #f59e0b;background:#fffbeb}
+#pmYearCalendar .pm-day.future{opacity:.75}
+#pmYearCalendar .pm-day.empty{visibility:hidden;pointer-events:none;border-color:transparent}
+@media(max-width:1100px){#pmYearCalendar.pm-year-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:700px){#pmYearCalendar.pm-year-grid{grid-template-columns:1fr}#pmYearCalendar .pm-day{min-height:48px}}
+
+.pm-summary-table tr.orlep-clickable{cursor:pointer;text-decoration:underline;text-decoration-style:dotted;text-underline-offset:3px}.pm-summary-table tr.orlep-clickable:hover{background:#dbeafe!important}.orlep-hint{font-size:10px;color:#1d4ed8;font-weight:700;white-space:nowrap}.orlep-detail-button{display:inline-block;margin-left:8px;border:1px solid #2563eb;border-radius:5px;background:#eff6ff;color:#1d4ed8;padding:3px 7px;font-size:11px;font-weight:700;cursor:pointer}.orlep-detail-button:hover{background:#dbeafe}
+.pm-summary-table-wrap{max-width:620px;margin:0 auto;overflow:auto}.pm-summary-table{width:100%;border-collapse:collapse;border:1px solid #cbd5e1;font-size:14px}.pm-summary-table th{background:#facc15;color:#111827;text-transform:uppercase;text-align:center;padding:10px;border:1px solid #475569}.pm-summary-table td{padding:8px 10px;border:1px solid #64748b}.pm-summary-table td:first-child{width:48px;text-align:center}.pm-summary-table td:last-child{text-align:right;font-variant-numeric:tabular-nums}.pm-summary-table tbody tr:nth-child(even){background:#f8fafc}.pm-summary-table tr.subtotal{background:#22e63c!important;font-weight:800}.pm-summary-table tr.grand-total{background:#facc15!important;font-weight:900}.pm-summary-table tr.subtotal td,.pm-summary-table tr.grand-total td{border-color:#334155}
+
+/* Popup kalender PM: tampil sebagai modal di tengah layar, bukan konten di halaman */
+.pm-detail-overlay{position:fixed!important;inset:0!important;z-index:10050!important;display:flex!important;align-items:center!important;justify-content:center!important;padding:24px!important;box-sizing:border-box!important;background:rgba(15,23,42,.64)!important;backdrop-filter:blur(3px)!important;overflow-y:auto!important}
+.pm-detail-dialog{position:relative!important;width:min(760px,calc(100vw - 32px))!important;max-width:760px!important;max-height:calc(100vh - 48px)!important;overflow:auto!important;margin:auto!important;background:#fff!important;color:#172033!important;border:1px solid #e2e8f0!important;border-radius:18px!important;padding:24px!important;box-shadow:0 24px 80px rgba(15,23,42,.35)!important;box-sizing:border-box!important}
+.pm-detail-dialog h2{font-size:22px!important;font-weight:800!important;color:#173b75!important;letter-spacing:-.3px!important}
+.pm-detail-dialog .muted{color:#64748b!important}
+.pm-detail-dialog .pm-summary-table-wrap{width:100%!important;max-width:none!important;margin:0!important;overflow-x:auto!important;border:1px solid #e2e8f0!important;border-radius:12px!important}
+.pm-detail-dialog .pm-summary-table{width:100%!important;min-width:0!important;border-collapse:separate!important;border-spacing:0!important;font-size:14px!important;border:0!important}
+.pm-detail-dialog .pm-summary-table th{position:sticky;top:0;background:#173b75!important;color:#fff!important;text-transform:uppercase!important;letter-spacing:.4px!important;font-size:12px!important;padding:13px 14px!important;border:0!important;border-bottom:1px solid #dbe3ef!important}
+.pm-detail-dialog .pm-summary-table td{padding:11px 14px!important;border:0!important;border-bottom:1px solid #e5eaf2!important}
+.pm-detail-dialog .pm-summary-table tbody tr:last-child td{border-bottom:0!important}
+.pm-detail-dialog .pm-summary-table td:first-child{width:54px!important;text-align:center!important;color:#64748b!important}
+.pm-detail-dialog .pm-summary-table td:nth-child(2){text-align:left!important}
+.pm-detail-dialog .pm-summary-table td:last-child{text-align:right!important;font-weight:700!important;font-variant-numeric:tabular-nums!important;white-space:nowrap!important}
+.pm-detail-dialog .pm-summary-table tr.subtotal{background:#dcfce7!important;color:#166534!important}
+.pm-detail-dialog .pm-summary-table tr.grand-total{background:#fef3c7!important;color:#92400e!important}
+.pm-detail-dialog .pm-summary-table tr.orlep-clickable{cursor:pointer!important}
+.pm-detail-dialog .orlep-detail-button{border:1px solid #bfdbfe!important;border-radius:7px!important;background:#eff6ff!important;color:#1d4ed8!important;padding:5px 9px!important;margin-left:10px!important;font-size:11px!important;font-weight:700!important;cursor:pointer!important}
+.pm-detail-dialog .orlep-detail-button:hover{background:#dbeafe!important}
+.pm-detail-dialog .btn{flex-shrink:0!important}
+@media(max-width:600px){.pm-detail-overlay{padding:10px!important;align-items:center!important}.pm-detail-dialog{width:100%!important;max-height:calc(100vh - 20px)!important;padding:16px!important;border-radius:14px!important}.pm-detail-dialog h2{font-size:19px!important}.pm-detail-dialog .pm-summary-table{font-size:12px!important}.pm-detail-dialog .pm-summary-table td,.pm-detail-dialog .pm-summary-table th{padding:9px 8px!important}}
+
+</style>
+
 </head>
 <body>
 <div id="loginScreen" class="login-screen">
@@ -171,6 +217,7 @@ button,input,select{font:inherit}.app{display:flex;min-height:100vh}
   <div class="userbar" style="margin:14px 8px 0"><span class="user-email" id="userEmail" style="color:#dbeafe"></span><button class="btn-logout" onclick="logoutFirebase()">Keluar</button></div><div class="nav">
     <div class="group">Utama</div>
     <button class="active" onclick="showPage('dashboard',this)">🏠 Dashboard</button>
+    <button onclick="showPage('kalenderPM',this)">🗓️ Kalender PM Tahunan</button>
     <div class="group">Master Data</div>
     <button onclick="showPage('schools',this)">🏫 Sekolah</button>
     <button onclick="showPage('students',this)">👨‍🎓 Siswa</button>
@@ -209,6 +256,7 @@ button,input,select{font:inherit}.app{display:flex;min-height:100vh}
  </div>
 <div class="card" style="grid-column:span 2"><b>Struktur Data</b><p class="muted">Sekolah menjadi induk siswa, guru, dan tenaga kependidikan. B3/Posyandu dikelola sebagai kelompok penerima manfaat tersendiri.</p></div>
   </div>
+
   <div class="section card" id="dashboardDownloadCard">
     <div class="section-head"><div><h2>Unduh Data Lengkap</h2><p class="muted">Unduh PDF detail setiap sekolah atau Posyandu dalam satu file ZIP.</p></div></div>
     <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
@@ -224,6 +272,11 @@ button,input,select{font:inherit}.app{display:flex;min-height:100vh}
     <div class="section-head"><h2>Ringkasan Sekolah</h2><button class="btn btn-secondary" onclick="showPage('schools',document.querySelector('.nav button:nth-of-type(3)'))">Kelola Sekolah</button></div>
     <div id="dashboardSchools"></div>
   </div>
+</section>
+
+<section id="kalenderPM" class="page">
+  <div class="top"><div><h1>Kalender PM Tahunan</h1><p>Jumlah PM setiap tanggal selama satu tahun. Klik tanggal untuk membuka detail penerima manfaat yang berlaku pada tanggal tersebut.</p></div><div style="display:flex;align-items:center;gap:8px"><button class="btn btn-secondary" type="button" onclick="changePMCalendarYear(-1)">◀ Tahun Sebelumnya</button><strong id="pmCalendarYearLabel" style="font-size:18px"></strong><button class="btn btn-secondary" type="button" onclick="changePMCalendarYear(1)">Tahun Berikutnya ▶</button></div></div>
+  <div class="section card" id="pmYearCalendarCard"><div id="pmYearCalendar" class="pm-year-grid"><div class="muted">Memuat kalender...</div></div><div class="muted" style="font-size:12px;margin-top:10px">Jumlah menunjukkan PM aktif yang berlaku pada tanggal tersebut menurut data dan riwayat periode yang tersimpan.</div></div>
 </section>
 
 <section id="schools" class="page">
@@ -469,7 +522,7 @@ async function put(store,obj){
 }
 async function del(store,id){
  if(!confirm(PM_STORES.includes(store)
-   ? 'Jadwalkan penghapusan PM mulai periode Senin berikutnya? Data tetap dihitung pada periode berjalan.'
+   ? 'Hapus PM sekarang? Penghapusan langsung berlaku mulai hari ini, sedangkan rekap tanggal sebelumnya tetap dipertahankan.'
    : 'Hapus data ini? Data yang dihapus tidak dapat dikembalikan kecuali dari backup.'))return;
  const ref=db.collection(store).doc(id); const snap=await ref.get();
  if(!snap.exists){toast('Data tidak ditemukan');return}
@@ -480,23 +533,28 @@ async function del(store,id){
  }else if(store==='posyandu_recipients'){
    const pos=await all('posyandu').catch(()=>[]); location=pos.find(x=>x.id===existing.posyanduId)?.name||'-';
  }
+ const today=dayISO();
  if(PM_STORES.includes(store)){
-   // Penghapusan PM tidak lagi instan: data tetap berlaku sampai akhir periode berjalan,
-   // lalu dikeluarkan dari snapshot mulai Senin berikutnya.
-   const nextMonday=nextMondayISO(dayISO());
-   if(existing.pendingDeleteFrom && String(existing.pendingDeleteFrom).slice(0,10)<=nextMonday){
-     toast('Penghapusan PM sudah dijadwalkan mulai '+formatDateID(existing.pendingDeleteFrom));
-     return;
+   // Simpan snapshot data sebelum hari penghapusan. Mulai hari ini, record aktif dihapus
+   // dari koleksi utama sehingga hitungan hari ini dan seterusnya langsung berkurang.
+   const existingFrom=String(existing.effectiveFrom||existing.createdAt||'0000-01-01').slice(0,10);
+   if(existingFrom<today){
+     const hist={...existing};
+     delete hist.id; delete hist.pendingDeleteFrom; delete hist.deleteRequestedAt;
+     await db.collection('pm_history').doc(uid('H')).set({
+       sourceStore:store,sourceId:id,effectiveFrom:existingFrom,effectiveTo:previousDayISO(today),
+       snapshot:hist,createdAt:new Date().toISOString(),reason:'deleted_effective_today'
+     });
    }
-   await ref.set({pendingDeleteFrom:nextMonday,deleteRequestedAt:new Date().toISOString()},{merge:true});
+   await ref.delete();
    await logPMActivity({
      eventType:'delete', sourceStore:store, sourceId:id, name:existing.name||'-',
      identity:existing.identityNumber||existing.nisn||existing.nis||existing.npsn||'-',
      pmType:activityPMType(store,existing), location,
-     status:existing.status||'-', previousStatus:existing.status||'', newStatus:'Dihapus mulai '+formatDateID(nextMonday), snapshot:existing,
-     effectiveFrom:nextMonday
+     status:existing.status||'-', previousStatus:existing.status||'', newStatus:'Dihapus mulai '+formatDateID(today), snapshot:existing,
+     effectiveFrom:today
    });
-   toast('Penghapusan dijadwalkan mulai '+formatDateID(nextMonday));
+   toast('PM berhasil dihapus mulai hari ini. Rekap hari sebelumnya tetap tersimpan.');
  }else{
    await ref.delete();
    await logPMActivity({
@@ -510,45 +568,32 @@ async function del(store,id){
  await refresh();
 }
 
-async function pmRecordsAsOf(date){
+function pmRecordsAsOfData(date,current,history){
  const target=String(date||dayISO()).slice(0,10);
- const [current,history]=await Promise.all([
-   Promise.all(PM_STORES.map(all)), all('pm_history').catch(()=>[])
- ]);
  const byId=new Map();
- PM_STORES.forEach((store,i)=>current[i].forEach(x=>{
+ PM_STORES.forEach((store,i)=>(current[i]||[]).forEach(x=>{
    let from=String(x.effectiveFrom||x.createdAt||'0000-01-01').slice(0,10);
    const created=String(x.createdAt||'').slice(0,10);
-   const targetMonday=mondayISO(target);
-   const targetSunday=sundayISO(target);
-   // Legacy/current-week input tanpa effectiveFrom (atau effectiveFrom salah
-   // di minggu berjalan) diperlakukan sebagai pending sampai Senin berikutnya.
-   if(String(x.status||'').trim().toLowerCase()==='aktif' && created && created>=targetMonday && created<=targetSunday && from>=targetMonday && from<=target){
-     from=addDaysISO(targetSunday,1);
-   }
-   if(from<=target) byId.set(store+'|'+x.id,{...x,__store:store,effectiveFrom:from});
+   const targetMonday=mondayISO(target),targetSunday=sundayISO(target);
+   if(String(x.status||'').trim().toLowerCase()==='aktif' && created && created>=targetMonday && created<=targetSunday && from>=targetMonday && from<=target){from=addDaysISO(targetSunday,1);}
+   if(from<=target)byId.set(store+'|'+x.id,{...x,__store:store,effectiveFrom:from});
  }));
- // History dapat berisi beberapa versi untuk PM yang sama. Urutkan berdasarkan
- // effectiveFrom agar versi yang tepat untuk tanggal target yang dipilih yang menang.
- history
-   .filter(h=>h&&h.sourceStore&&h.sourceId)
-   .sort((a,b)=>{
-     const af=String(a.effectiveFrom||'0000-01-01').slice(0,10);
-     const bf=String(b.effectiveFrom||'0000-01-01').slice(0,10);
-     if(af!==bf)return af.localeCompare(bf);
-     return String(a.createdAt||'').localeCompare(String(b.createdAt||''));
-   })
-   .forEach(h=>{
-     const from=String(h.effectiveFrom||'').slice(0,10), to=String(h.effectiveTo||'9999-12-31').slice(0,10);
-     if(from<=target && target<=to){
-       byId.set(h.sourceStore+'|'+h.sourceId,{...(h.snapshot||{}),id:h.sourceId,__store:h.sourceStore});
-     }
-   });
+ (history||[]).filter(h=>h&&h.sourceStore&&h.sourceId).sort((a,b)=>{
+   const af=String(a.effectiveFrom||'0000-01-01').slice(0,10),bf=String(b.effectiveFrom||'0000-01-01').slice(0,10);
+   if(af!==bf)return af.localeCompare(bf);return String(a.createdAt||'').localeCompare(String(b.createdAt||''));
+ }).forEach(h=>{
+   const from=String(h.effectiveFrom||'').slice(0,10),to=String(h.effectiveTo||'9999-12-31').slice(0,10);
+   if(from<=target&&target<=to)byId.set(h.sourceStore+'|'+h.sourceId,{...(h.snapshot||{}),id:h.sourceId,__store:h.sourceStore});
+ });
  return [...byId.values()].filter(x=>{
    const from=String(x.effectiveFrom||x.createdAt||'0000-01-01').slice(0,10);
    const pendingDelete=String(x.pendingDeleteFrom||'9999-12-31').slice(0,10);
-   return from<=target && target<pendingDelete;
+   return from<=target&&target<pendingDelete;
  });
+}
+async function pmRecordsAsOf(date){
+ const [current,history]=await Promise.all([Promise.all(PM_STORES.map(all)),all('pm_history').catch(()=>[])]);
+ return pmRecordsAsOfData(date,current,history);
 }
 function periodRecordsFor(date){
  // Rekap periode menggunakan kondisi yang berlaku pada Senin awal periode.
@@ -2006,7 +2051,11 @@ async function renderPMHistory(){
  try{
   // Riwayat tidak dibatasi periode/hari. Gabungkan aktivitas yang tercatat
   // dengan input lama yang belum memiliki record di pm_activity.
-  const activities=await buildAllHistoryActivities();
+  const allActivities=await buildAllHistoryActivities();
+  // Riwayat hanya menampilkan aktivitas penting sesuai aturan pengguna.
+  // Edit porsi (Kecil/Besar) dan edit data PM biasa tidak termasuk riwayat.
+  const allowedHistoryEvents=new Set(['input','delete','status_change','school_edit']);
+  const activities=allActivities.filter(x=>allowedHistoryEvents.has(String(x.eventType||'').trim().toLowerCase()));
   const q=(document.getElementById('historyPMSearch')?.value||'').toLowerCase().trim();
   const typ=(document.getElementById('historyPMType')?.value||'').trim();
   const filtered=activities
@@ -2042,7 +2091,110 @@ async function renderPMHistory(){
  }
 }
 
-async function refresh(){await repairPosyanduRecipientData();await repairTodayPMEffectiveDates();await fillSchoolFilters();await dashboard();if(document.getElementById('schools').classList.contains('active'))renderSchools();if(document.getElementById('students')?.classList.contains('active'))renderStudents();if(document.getElementById('teachers').classList.contains('active'))renderTeachers();if(document.getElementById('staff').classList.contains('active'))renderStaff();if(document.getElementById('posyandu').classList.contains('active')){renderPosyandu();renderPosyanduRecipients()}if(document.getElementById('rekap')?.classList.contains('active'))renderRekap();if(document.getElementById('riwayatPM')?.classList.contains('active'))renderPMHistory()}
+
+let pmCalendarYear = new Date().getFullYear();
+let pmCalendarRenderToken = 0;
+function changePMCalendarYear(delta){pmCalendarYear+=Number(delta||0);renderPMYearCalendar();}
+function escCalendar(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+async function renderPMYearCalendar(){
+ const host=document.getElementById('pmYearCalendar');if(!host)return;
+ const token=++pmCalendarRenderToken;
+ const yearLabel=document.getElementById('pmCalendarYearLabel');if(yearLabel)yearLabel.textContent=pmCalendarYear;
+ host.innerHTML='<div class="muted">Menghitung jumlah PM harian...</div>';
+ try{
+   // Satu pengambilan data per render, lalu gunakan fungsi snapshot periode yang sama dengan Dashboard.
+   const [current,history,schools,posyandu]=await Promise.all([Promise.all(PM_STORES.map(all)),all('pm_history').catch(()=>[]),all('schools'),all('posyandu')]);
+   if(token!==pmCalendarRenderToken)return;
+   const schoolMap=new Map(schools.map(x=>[x.id,x])),posMap=new Map(posyandu.map(x=>[x.id,x]));
+   const isActive=x=>String(x?.status||'').trim().toLowerCase()==='aktif';
+   const countsByDate={};const today=dayISO();
+   for(let m=0;m<12;m++)for(let d=1;d<=new Date(pmCalendarYear,m+1,0).getDate();d++){
+     const iso=`${pmCalendarYear}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+     const pm=pmRecordsAsOfData(iso,current,history).filter(x=>isActive(x)&&(
+       (['beneficiaries','teachers','staff'].includes(x.__store)&&isActive(schoolMap.get(x.schoolId)))||
+       (x.__store==='posyandu_recipients'&&isActive(posMap.get(x.posyanduId)))
+     ));
+     // Setiap Posyandu mendapat alokasi ORLEP 2 porsi per hari/tanggal.
+     const activePosyandu=posyandu.filter(isActive).length;
+     countsByDate[iso]=pm.length+(activePosyandu*2);
+   }
+   const months=['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+   const wd=['Min','Sen','Sel','Rab','Kam','Jum','Sab'];
+   host.innerHTML=months.map((month,m)=>{
+     const first=new Date(pmCalendarYear,m,1).getDay(),days=new Date(pmCalendarYear,m+1,0).getDate();let cells='';
+     for(let i=0;i<first;i++)cells+='<div class="pm-day empty" aria-hidden="true"></div>';
+     for(let d=1;d<=days;d++){const iso=`${pmCalendarYear}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`,count=countsByDate[iso]||0;
+       const cls=['pm-day',count?'has-pm':'zero-pm',iso===today?'today':'',iso>today?'future':''].filter(Boolean).join(' ');
+       cells+=`<button type="button" class="${cls}" title="Klik untuk ringkasan PM ${iso}" onclick="openPMCalendarDate('${iso}')"><span>${d}</span><span class="pm-count">${count.toLocaleString('id-ID')} PM</span></button>`;
+     }
+     return `<div class="pm-month"><div class="pm-month-title">${month} ${pmCalendarYear}</div><div class="pm-month-days">${wd.map(x=>`<div class="pm-weekday">${x}</div>`).join('')}${cells}</div></div>`;
+   }).join('');
+ }catch(err){console.error(err);host.innerHTML='<div class="muted">Kalender gagal dimuat. Periksa koneksi Firebase lalu coba lagi.</div>';}
+}
+async function openPMCalendarDate(iso){
+ const overlay=document.createElement('div');overlay.className='pm-detail-overlay';overlay.id='pmCalendarDetailOverlay';
+ overlay.innerHTML=`<div class="pm-detail-dialog" role="dialog" aria-modal="true" aria-labelledby="pmCalendarModalTitle" tabindex="-1"><div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap"><div><h2 id="pmCalendarModalTitle" style="margin:0 0 5px">Rekap PM ${escCalendar(formatDateID(iso))}</h2><p class="muted" style="margin:0">Ringkasan jumlah PM aktif yang berlaku pada tanggal ini.</p></div><button class="btn btn-secondary" type="button" onclick="document.getElementById('pmCalendarDetailOverlay')?.remove()">✕ Tutup</button></div><div id="pmCalendarDateDetail" style="margin-top:16px">Memuat rekap...</div></div>`;
+ overlay.addEventListener('click',e=>{if(e.target===overlay)overlay.remove()});document.body.appendChild(overlay);setTimeout(()=>overlay.querySelector('.pm-detail-dialog')?.focus(),0);
+ try{
+   const [pm,schools,posyandu]=await Promise.all([pmRecordsAsOf(iso),all('schools'),all('posyandu')]);
+   const active=x=>String(x?.status||'').trim().toLowerCase()==='aktif';
+   const sm=new Map(schools.map(x=>[x.id,x])),posMap=new Map(posyandu.map(x=>[x.id,x]));
+   const rows=pm.filter(x=>active(x)&&((['beneficiaries','teachers','staff'].includes(x.__store)&&active(sm.get(x.schoolId)))||(x.__store==='posyandu_recipients'&&active(posMap.get(x.posyanduId)))));
+   const schoolRows=rows.filter(x=>['beneficiaries','teachers','staff'].includes(x.__store));
+   const students=schoolRows.filter(x=>x.__store==='beneficiaries'&&String(x.beneficiaryType||'1')==='1');
+   const schoolLevel=x=>String(sm.get(x.schoolId)?.level||'').trim().toUpperCase().replace(/\s+/g,'');
+   const portion=x=>String(x.portionType||x.jenisPorsi||x.portion||'').trim().toLowerCase();
+   const isTKPAUD=x=>/^(TK|PAUD|KB|KOBER|RA)$/.test(schoolLevel(x));
+   const isSD=x=>/^(SD|MI)$/.test(schoolLevel(x));
+   const isSMP=x=>/^(SMP|MTS|MTs)$/.test(schoolLevel(x));
+   const isSMA=x=>/^(SMA|SMK|MA)$/.test(schoolLevel(x));
+   const tkpaud=students.filter(isTKPAUD).length;
+   const sdKecil=students.filter(x=>isSD(x)&&portion(x)==='kecil').length;
+   const sdBesar=students.filter(x=>isSD(x)&&portion(x)==='besar').length;
+   const smp=students.filter(isSMP).length,sma=students.filter(isSMA).length;
+   const totalSiswa=tkpaud+sdKecil+sdBesar+smp+sma;
+   const guru=rows.filter(x=>x.__store==='teachers'||(x.__store==='beneficiaries'&&String(x.beneficiaryType)==='2')).length;
+   const tendik=rows.filter(x=>x.__store==='staff'||(x.__store==='beneficiaries'&&String(x.beneficiaryType)==='3')).length;
+   const posRows=rows.filter(x=>x.__store==='posyandu_recipients');
+   const recipient=x=>String(x.recipientType||x.jenisPenerima||'').trim().toUpperCase();
+   const bumil=posRows.filter(x=>recipient(x)==='BUMIL').length,busui=posRows.filter(x=>recipient(x)==='BUSUI').length,balita=posRows.filter(x=>recipient(x)==='BALITA').length;
+   const activePosyandu=posyandu.filter(active);
+   // ORLEP merupakan alokasi, bukan data penerima tersendiri: 2 porsi untuk setiap Posyandu aktif.
+   const orlep=activePosyandu.length*2;
+   const totalPos=bumil+busui+balita+orlep,totalSekolah=totalSiswa+guru+tendik,total=totalSekolah+totalPos;
+   const tableRows=[['TK/PAUD',tkpaud],['SD KELAS 1–3 (PORSI KECIL)',sdKecil],['SD KELAS 4–6 (PORSI BESAR)',sdBesar],['SMP',smp],['SMA/SMK',sma],['TOTAL SISWA',totalSiswa,'total'],['GURU',guru],['TENDIK',tendik],['TOTAL GURU + TENDIK',guru+tendik,'total'],['BUMIL',bumil],['BUSUI',busui],['BALITA',balita],['ORLEP',orlep,'orlep'],['TOTAL B3 + ORLEP',totalPos,'total'],['TOTAL',total,'grand']];
+   const detail=document.getElementById('pmCalendarDateDetail');if(!detail)return;
+   const allActivities=await all('pm_activity').catch(()=>[]);
+   const activityDay=activity=>{const d=new Date(activity.changedAt||activity.createdAt||'');if(Number.isNaN(d.getTime()))return '';return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;};
+   const dayActivities=allActivities.filter(a=>activityDay(a)===iso && ['input','delete','status_change','school_edit'].includes(String(a.eventType||'').toLowerCase())).sort((a,b)=>(Date.parse(a.changedAt||a.createdAt||'')||0)-(Date.parse(b.changedAt||b.createdAt||'')||0));
+   const activityText=a=>{
+     const store=String(a.sourceStore||'');
+     const type=String(a.pmType|| (store==='schools'?'Sekolah':'PM'));
+     const place=String(a.location||'-');
+     if(a.eventType==='delete')return `Hapus 1 Data ${type} ${place}`;
+     if(a.eventType==='input')return `Input Baru ${type} ${place}`;
+     if(a.eventType==='status_change')return `Perubahan status ${type} ${place}`;
+     if(a.eventType==='school_edit')return `Perubahan data Sekolah ${a.name||place}`;
+     return `Aktivitas ${type} ${place}`;
+   };
+   const activityPanel=`<section class="pm-day-activity" style="margin-top:16px;border:1px solid #dbe4f0;border-radius:12px;overflow:hidden;background:#fff"><div style="padding:12px 14px;background:#eef4ff;border-bottom:1px solid #dbe4f0;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><strong>Aktivitas pada ${escCalendar(formatDateID(iso))}</strong><span style="font-size:12px;color:#64748b">${dayActivities.length} aktivitas</span></div>${dayActivities.length?`<ul style="list-style:none;margin:0;padding:0">${dayActivities.map((a,i)=>`<li style="display:flex;gap:10px;align-items:flex-start;padding:11px 14px;border-bottom:${i===dayActivities.length-1?'0':'1px solid #edf1f6'}"><span style="display:inline-flex;align-items:center;justify-content:center;min-width:30px;height:30px;border-radius:8px;background:${a.eventType==='delete'?'#fee2e2':a.eventType==='input'?'#dcfce7':'#e0e7ff'};color:${a.eventType==='delete'?'#b91c1c':a.eventType==='input'?'#166534':'#3730a3'};font-weight:800">${a.eventType==='delete'?'−':a.eventType==='input'?'+':'↻'}</span><div style="flex:1;min-width:0"><div style="font-weight:650;color:#1e293b">${escCalendar(activityText(a))}</div><div style="font-size:12px;color:#64748b;margin-top:3px">${escCalendar(a.name||'-')}${a.identity&&a.identity!=='-'?' · '+escCalendar(a.identity):''}</div></div><time style="white-space:nowrap;font-size:11px;color:#64748b">${escCalendar(new Date(a.changedAt||a.createdAt||'').toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'}))}</time></li>`).join('')}</ul>`:`<div style="padding:18px;text-align:center;color:#64748b">Belum ada aktivitas PM yang tercatat pada tanggal ini.</div>`}</section>`;
+   detail.innerHTML=`<div class="pm-summary-table-wrap"><table class="pm-summary-table"><thead><tr><th>No</th><th>Jenis PM</th><th>Jumlah</th></tr></thead><tbody>${tableRows.map((r,i)=>`<tr class="${r[2]==='grand'?'grand-total':r[2]==='total'?'subtotal':''} ${r[2]==='orlep'?'orlep-clickable':''}"><td>${r[2]?'':i+1}</td><td>${escCalendar(r[0])}${r[2]==='orlep'?' <button type="button" class="orlep-detail-button" onclick="event.stopPropagation();openOrlepAllocationDetail(\'${iso}\')">Lihat rincian ↗</button>':''}</td><td>${Number(r[1]).toLocaleString('id-ID')}</td></tr>`).join('')}</tbody></table></div>${activityPanel}`;
+ }catch(err){console.error(err);const detail=document.getElementById('pmCalendarDateDetail');if(detail)detail.innerHTML='<p>Gagal memuat rekap PM. Periksa koneksi Firebase.</p>';}
+}
+
+async function openOrlepAllocationDetail(iso){
+ const existing=document.getElementById('orlepAllocationOverlay');if(existing)existing.remove();
+ const overlay=document.createElement('div');overlay.className='pm-detail-overlay';overlay.id='orlepAllocationOverlay';overlay.style.zIndex='20010';
+ overlay.innerHTML=`<div class="pm-detail-dialog" style="max-width:650px"><div style="display:flex;justify-content:space-between;align-items:center;gap:12px"><div><h2 style="margin:0 0 5px">Rincian ORLEP</h2><p class="muted" style="margin:0">Alokasi 2 porsi untuk setiap Posyandu aktif · ${escCalendar(formatDateID(iso))}</p></div><button class="btn btn-secondary" type="button" onclick="document.getElementById('orlepAllocationOverlay')?.remove()">✕ Tutup</button></div><div id="orlepAllocationContent" style="margin-top:16px">Memuat rincian...</div></div>`;
+ overlay.addEventListener('click',e=>{if(e.target===overlay)overlay.remove()});document.body.appendChild(overlay);
+ try{
+   const posyandu=await all('posyandu');const active=posyandu.filter(x=>String(x?.status||'').trim().toLowerCase()==='aktif');
+   const content=document.getElementById('orlepAllocationContent');if(!content)return;
+   content.innerHTML=`<div class="pm-summary-table-wrap"><table class="pm-summary-table"><thead><tr><th>No</th><th>Nama Posyandu</th><th>Alokasi Porsi</th></tr></thead><tbody>${active.map((x,i)=>`<tr><td>${i+1}</td><td>${escCalendar(x.name||x.nama||'Posyandu tanpa nama')}</td><td>2</td></tr>`).join('')}<tr class="grand-total"><td colspan="2">TOTAL ALOKASI ORLEP</td><td>${active.length*2}</td></tr></tbody></table></div><p class="muted" style="margin-top:10px;font-size:12px">Total dihitung dari ${active.length} Posyandu aktif × 2 porsi. Jika status Posyandu berubah, jumlah alokasi mengikuti jumlah Posyandu aktif.</p>`;
+ }catch(err){console.error(err);const content=document.getElementById('orlepAllocationContent');if(content)content.innerHTML='<p>Gagal memuat rincian alokasi ORLEP dari Firebase.</p>';}
+}
+
+async function refresh(){await repairPosyanduRecipientData();await repairTodayPMEffectiveDates();await fillSchoolFilters();await dashboard();if(document.getElementById("pmYearCalendar")&&document.getElementById("kalenderPM")?.classList.contains("active"))renderPMYearCalendar();if(document.getElementById('schools').classList.contains('active'))renderSchools();if(document.getElementById('students')?.classList.contains('active'))renderStudents();if(document.getElementById('teachers').classList.contains('active'))renderTeachers();if(document.getElementById('staff').classList.contains('active'))renderStaff();if(document.getElementById('posyandu').classList.contains('active')){renderPosyandu();renderPosyanduRecipients()}if(document.getElementById('rekap')?.classList.contains('active'))renderRekap();if(document.getElementById('riwayatPM')?.classList.contains('active'))renderPMHistory()}
 
 setTimeout(()=>{setDefaultRekapDate();renderPMHistory()},0);
 

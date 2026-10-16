@@ -183,11 +183,13 @@ button,input,select{font:inherit}.app{display:flex;min-height:100vh}
 .pm-detail-dialog h2{font-size:22px!important;font-weight:800!important;color:#173b75!important;letter-spacing:-.3px!important}
 .pm-detail-dialog .muted{color:#64748b!important}
 .pm-detail-dialog .pm-summary-table-wrap{width:100%!important;max-width:none!important;margin:0!important;overflow-x:auto!important;border:1px solid #e2e8f0!important;border-radius:12px!important}
-.pm-detail-dialog .pm-summary-table{width:100%!important;min-width:0!important;border-collapse:separate!important;border-spacing:0!important;font-size:14px!important;border:0!important}
-.pm-detail-dialog .pm-summary-table th{position:sticky;top:0;background:#173b75!important;color:#fff!important;text-transform:uppercase!important;letter-spacing:.4px!important;font-size:12px!important;padding:13px 14px!important;border:0!important;border-bottom:1px solid #dbe3ef!important}
-.pm-detail-dialog .pm-summary-table td{padding:11px 14px!important;border:0!important;border-bottom:1px solid #e5eaf2!important}
+.pm-detail-dialog .pm-summary-table{width:100%!important;min-width:0!important;table-layout:fixed!important;border-collapse:separate!important;border-spacing:0!important;font-size:11px!important;border:0!important}
+.pm-detail-dialog .pm-summary-table th{position:static;top:0;background:#173b75!important;color:#fff!important;text-transform:uppercase!important;letter-spacing:.2px!important;font-size:10px!important;padding:5px 6px!important;border:0!important;border-bottom:1px solid #dbe3ef!important}
+.pm-detail-dialog .pm-summary-table td{padding:4px 6px!important;border:0!important;border-bottom:1px solid #e5eaf2!important}
 .pm-detail-dialog .pm-summary-table tbody tr:last-child td{border-bottom:0!important}
-.pm-detail-dialog .pm-summary-table td:first-child{width:54px!important;text-align:center!important;color:#64748b!important}
+.pm-detail-dialog .pm-summary-table th:first-child,.pm-detail-dialog .pm-summary-table td:first-child{width:48px!important;text-align:center!important;color:#64748b!important}
+.pm-detail-dialog .pm-summary-table th:nth-child(2),.pm-detail-dialog .pm-summary-table td:nth-child(2){width:50%!important;overflow-wrap:anywhere!important}
+.pm-detail-dialog .pm-summary-table th:nth-child(n+3),.pm-detail-dialog .pm-summary-table td:nth-child(n+3){width:12%!important;text-align:center!important;font-variant-numeric:tabular-nums!important}
 .pm-detail-dialog .pm-summary-table td:nth-child(2){text-align:left!important}
 .pm-detail-dialog .pm-summary-table td:last-child{text-align:right!important;font-weight:700!important;font-variant-numeric:tabular-nums!important;white-space:nowrap!important}
 .pm-detail-dialog .pm-summary-table tr.subtotal{background:#dcfce7!important;color:#166534!important}
@@ -196,10 +198,15 @@ button,input,select{font:inherit}.app{display:flex;min-height:100vh}
 .pm-detail-dialog .orlep-detail-button{border:1px solid #bfdbfe!important;border-radius:7px!important;background:#eff6ff!important;color:#1d4ed8!important;padding:5px 9px!important;margin-left:10px!important;font-size:11px!important;font-weight:700!important;cursor:pointer!important}
 .pm-detail-dialog .orlep-detail-button:hover{background:#dbeafe!important}
 .pm-detail-dialog .btn{flex-shrink:0!important}
-@media(max-width:600px){.pm-detail-overlay{padding:10px!important;align-items:center!important}.pm-detail-dialog{width:100%!important;max-height:calc(100vh - 20px)!important;padding:16px!important;border-radius:14px!important}.pm-detail-dialog h2{font-size:19px!important}.pm-detail-dialog .pm-summary-table{font-size:12px!important}.pm-detail-dialog .pm-summary-table td,.pm-detail-dialog .pm-summary-table th{padding:9px 8px!important}}
+@media(max-width:600px){.pm-detail-overlay{padding:5px!important;align-items:center!important}.pm-detail-dialog{width:100%!important;max-height:calc(100vh - 10px)!important;padding:8px!important;border-radius:10px!important}.pm-detail-dialog h2{font-size:16px!important}.pm-detail-dialog .pm-summary-table{font-size:10px!important}.pm-detail-dialog .pm-summary-table td,.pm-detail-dialog .pm-summary-table th{padding:4px!important}}
 
 </style>
 
+
+<style id="rekap-posyandu-grand-total-style">
+.rekap-pos-grand-total .rekap-table thead th{background:#173b75!important;color:#fff!important}
+.rekap-pos-grand-total .subtotal td{background:#d9f7df!important;font-weight:800}
+</style>
 </head>
 <body>
 <div id="loginScreen" class="login-screen">
@@ -1391,13 +1398,31 @@ async function downloadSchoolsZip(button){
  }catch(err){console.error(err);alert('Gagal membuat ZIP sekolah: '+(err?.message||err));}
  finally{if(button){button.disabled=false;button.textContent=original||'⬇ PDF Semua Sekolah (ZIP)';}}
 }
+const POSYANDU_ORDER = ['CIBADAK','SUKAPURA','KARANGSARI','CIKASO','KARAMAT','PONGPORANG','AMPERA','PASIR IPIS 1','PASIR IPIS 2'];
+const DESA_POSYANDU_ORDER = ['CIKASO','SINDANGRASA'];
+function posyanduNameRank(name){
+ const normalized=String(name||'').trim().toLocaleUpperCase('id');
+ const idx=POSYANDU_ORDER.indexOf(normalized);
+ return idx<0?999:idx;
+}
+function posyanduVillage(p){return String(p?.village||p?.desa||p?.addressVillage||'Desa Tidak Diisi').trim()||'Desa Tidak Diisi';}
+function comparePosyandu(a,b){
+ const va=posyanduVillage(a).toLocaleUpperCase('id'), vb=posyanduVillage(b).toLocaleUpperCase('id');
+ const ia=DESA_POSYANDU_ORDER.indexOf(va), ib=DESA_POSYANDU_ORDER.indexOf(vb);
+ const ra=ia<0?999:ia, rb=ib<0?999:ib;
+ if(ra!==rb)return ra-rb;
+ const na=posyanduNameRank(a?.name), nb=posyanduNameRank(b?.name);
+ if(na!==nb)return na-nb;
+ return String(a?.name||'').localeCompare(String(b?.name||''),'id');
+}
+
 async function downloadPosyanduZip(button){
  const original=button?.textContent;
  try{
   if(!window.JSZip){alert('Fitur ZIP belum tersedia. Pastikan internet aktif lalu muat ulang aplikasi.');return;}
   if(!window.jspdf?.jsPDF){alert('Fitur PDF belum tersedia. Pastikan internet aktif lalu muat ulang aplikasi.');return;}
   if(button){button.disabled=true;button.textContent='Membuat PDF Posyandu...';}
-  const posyandus=(await all('posyandu')).sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''),'id'));
+  const posyandus=(await all('posyandu')).sort(comparePosyandu);
   if(!posyandus.length){alert('Belum ada data Posyandu untuk dibuatkan PDF.');return;}
   const zip=new JSZip();let done=0,failed=[];
   for(const pos of posyandus){
@@ -1881,6 +1906,7 @@ async function renderRekap(){
  });
 
  let schoolHtml='';
+ let grandSchoolK=0,grandSchoolB=0;
  Object.entries(groups).forEach(([group,items])=>{
    if(!items.length)return;
 
@@ -1895,6 +1921,7 @@ async function renderRekap(){
        <td class="num-cell total-cell">${item.total}</td>
      </tr>`;
    }).join('');
+   grandSchoolK+=groupK; grandSchoolB+=groupB;
 
    schoolHtml+=`
     <div class="rekap-group">
@@ -1931,21 +1958,26 @@ async function renderRekap(){
  });
 
  let posHtml='';
- const villageNames=Object.keys(villageMap).sort((a,b)=>a.localeCompare(b));
+ let grandPosK=0,grandPosB=0;
+ const villageNames=Object.keys(villageMap).sort((a,b)=>{const ia=DESA_POSYANDU_ORDER.indexOf(a.toLocaleUpperCase('id'));const ib=DESA_POSYANDU_ORDER.indexOf(b.toLocaleUpperCase('id'));return (ia<0?999:ia)-(ib<0?999:ib)||a.localeCompare(b,'id');});
  villageNames.forEach(village=>{
    let vk=0,vb=0;
-   const rows=villageMap[village].map((p,i)=>{
+   const rows=villageMap[village].sort((a,b)=>{const ra=posyanduNameRank(a.name),rb=posyanduNameRank(b.name);return ra-rb||String(a.name||'').localeCompare(String(b.name||''),'id');}).map((p,i)=>{
      const records=posRecipients.filter(x=>x.posyanduId===p.id);
      const c=portionCounts(records);
-     vk+=c.kecil; vb+=c.besar;
+     // Alokasi ORLEP: setiap Posyandu menambahkan 1 ke PK dan 1 ke PB.
+     const pkWithOrlep=c.kecil+1;
+     const pbWithOrlep=c.besar+1;
+     vk+=pkWithOrlep; vb+=pbWithOrlep;
      return `<tr>
        <td class="center">${i+1}</td>
        <td>${esc(p.name||'-')}</td>
-       <td class="num-cell">${c.kecil}</td>
-       <td class="num-cell">${c.besar}</td>
-       <td class="num-cell total-cell">${c.kecil+c.besar}</td>
+       <td class="num-cell">${pkWithOrlep}</td>
+       <td class="num-cell">${pbWithOrlep}</td>
+       <td class="num-cell total-cell">${pkWithOrlep+pbWithOrlep}</td>
      </tr>`;
    }).join('');
+   grandPosK+=vk; grandPosB+=vb;
 
    posHtml+=`
     <div class="rekap-group">
@@ -1963,7 +1995,7 @@ async function renderRekap(){
       <tbody>
        ${rows}
        <tr class="subtotal">
-        <td></td><td>Jumlah</td>
+        <td></td><td>Jumlah Desa ${esc(village)}</td>
         <td class="num-cell">${vk}</td>
         <td class="num-cell">${vb}</td>
         <td class="num-cell">${vk+vb}</td>
@@ -1972,12 +2004,17 @@ async function renderRekap(){
      </table>
     </div>`;
  });
+ if(villageNames.length){
+   posHtml+=`<div class="rekap-group rekap-pos-grand-total"><table class="rekap-table"><thead><tr><th colspan="5">TOTAL KESELURUHAN POSYANDU</th></tr><tr><th class="no-col">NO</th><th>REKAP</th><th>PK</th><th>PB</th><th>PK + PB</th></tr></thead><tbody><tr class="subtotal"><td></td><td>Total seluruh Posyandu</td><td class="num-cell">${grandPosK}</td><td class="num-cell">${grandPosB}</td><td class="num-cell">${grandPosK+grandPosB}</td></tr></tbody></table><p class="muted" style="font-size:12px;margin:8px 0 0">Catatan: jumlah PK dan PB sudah termasuk tambahan 1 ORLEP pada masing-masing kategori untuk setiap Posyandu aktif.</p></div>`;
+ }
+ const allPK=grandSchoolK+grandPosK, allPB=grandSchoolB+grandPosB;
+ const overallHtml=`<div class="rekap-group rekap-pos-grand-total"><table class="rekap-table"><thead><tr><th colspan="5">TOTAL KESELURUHAN SEKOLAH + POSYANDU</th></tr><tr><th class="no-col">NO</th><th>SUMBER DATA</th><th>PK</th><th>PB</th><th>PK + PB</th></tr></thead><tbody><tr><td>1</td><td>Total Sekolah</td><td class="num-cell">${grandSchoolK}</td><td class="num-cell">${grandSchoolB}</td><td class="num-cell">${grandSchoolK+grandSchoolB}</td></tr><tr><td>2</td><td>Total Posyandu (termasuk ORLEP)</td><td class="num-cell">${grandPosK}</td><td class="num-cell">${grandPosB}</td><td class="num-cell">${grandPosK+grandPosB}</td></tr><tr class="subtotal"><td></td><td>TOTAL KESELURUHAN</td><td class="num-cell">${allPK}</td><td class="num-cell">${allPB}</td><td class="num-cell">${allPK+allPB}</td></tr></tbody></table><p class="muted" style="font-size:12px;margin:8px 0 0">Total menggabungkan seluruh sekolah aktif dan Posyandu aktif. Angka Posyandu sudah termasuk tambahan 1 ORLEP untuk PK dan 1 ORLEP untuk PB pada setiap Posyandu aktif.</p></div>`;
 
  document.getElementById('rekapSekolah').innerHTML=
    `<div class="rekap-section-title">REKAP SEKOLAH</div>${schoolHtml||'<div class="empty-rekap">Belum ada data sekolah aktif.</div>'}`;
 
  document.getElementById('rekapPosyandu').innerHTML=
-   `<div class="rekap-section-title">REKAP POSYANDU PER DESA</div>${posHtml||'<div class="empty-rekap">Belum ada data Posyandu aktif.</div>'}`;
+   `<div class="rekap-section-title">REKAP POSYANDU PER DESA</div>${posHtml||'<div class="empty-rekap">Belum ada data Posyandu aktif.</div>'}${overallHtml}`;
 }
 
 let historyPMPage=1;
@@ -2142,7 +2179,7 @@ async function renderPMYearCalendar(){
 }
 async function openPMCalendarDate(iso){
  const overlay=document.createElement('div');overlay.className='pm-detail-overlay';overlay.id='pmCalendarDetailOverlay';
- overlay.innerHTML=`<div class="pm-detail-dialog" role="dialog" aria-modal="true" aria-labelledby="pmCalendarModalTitle" tabindex="-1"><div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap"><div><h2 id="pmCalendarModalTitle" style="margin:0 0 5px">Rekap PM ${escCalendar(formatDateID(iso))}</h2><p class="muted" style="margin:0">Ringkasan jumlah PM aktif yang berlaku pada tanggal ini.</p></div><button class="btn btn-secondary" type="button" onclick="document.getElementById('pmCalendarDetailOverlay')?.remove()">✕ Tutup</button></div><div id="pmCalendarDateDetail" style="margin-top:16px">Memuat rekap...</div></div>`;
+ overlay.innerHTML=`<div class="pm-detail-dialog" role="dialog" aria-modal="true" aria-labelledby="pmCalendarModalTitle" tabindex="-1"><div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap"><div><h2 id="pmCalendarModalTitle" style="margin:0 0 5px">Rekap PM ${escCalendar(formatDateID(iso))}</h2><p class="muted" style="margin:0">Ringkasan jumlah PM aktif yang berlaku pada tanggal ini.</p></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-primary" type="button" onclick="openPMCalendarFullDetail('${iso}')">📋 Detail PM</button><button class="btn btn-secondary" type="button" onclick="document.getElementById('pmCalendarDetailOverlay')?.remove()">✕ Tutup</button></div></div><div id="pmCalendarDateDetail" style="margin-top:16px">Memuat rekap...</div></div>`;
  overlay.addEventListener('click',e=>{if(e.target===overlay)overlay.remove()});document.body.appendChild(overlay);setTimeout(()=>overlay.querySelector('.pm-detail-dialog')?.focus(),0);
  try{
    const [pm,schools,posyandu]=await Promise.all([pmRecordsAsOf(iso),all('schools'),all('posyandu')]);
@@ -2189,6 +2226,43 @@ async function openPMCalendarDate(iso){
    const activityPanel=`<section class="pm-day-activity" style="margin-top:16px;border:1px solid #dbe4f0;border-radius:12px;overflow:hidden;background:#fff"><div style="padding:12px 14px;background:#eef4ff;border-bottom:1px solid #dbe4f0;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><strong>Aktivitas pada ${escCalendar(formatDateID(iso))}</strong><span style="font-size:12px;color:#64748b">${dayActivities.length} aktivitas</span></div>${dayActivities.length?`<ul style="list-style:none;margin:0;padding:0">${dayActivities.map((a,i)=>`<li style="display:flex;gap:10px;align-items:flex-start;padding:11px 14px;border-bottom:${i===dayActivities.length-1?'0':'1px solid #edf1f6'}"><span style="display:inline-flex;align-items:center;justify-content:center;min-width:30px;height:30px;border-radius:8px;background:${a.eventType==='delete'?'#fee2e2':a.eventType==='input'?'#dcfce7':'#e0e7ff'};color:${a.eventType==='delete'?'#b91c1c':a.eventType==='input'?'#166534':'#3730a3'};font-weight:800">${a.eventType==='delete'?'−':a.eventType==='input'?'+':'↻'}</span><div style="flex:1;min-width:0"><div style="font-weight:650;color:#1e293b">${escCalendar(activityText(a))}</div><div style="font-size:12px;color:#64748b;margin-top:3px">${escCalendar(a.name||'-')}${a.identity&&a.identity!=='-'?' · '+escCalendar(a.identity):''}</div></div><time style="white-space:nowrap;font-size:11px;color:#64748b">${escCalendar(new Date(a.changedAt||a.createdAt||'').toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'}))}</time></li>`).join('')}</ul>`:`<div style="padding:18px;text-align:center;color:#64748b">Belum ada aktivitas PM yang tercatat pada tanggal ini.</div>`}</section>`;
    detail.innerHTML=`<div class="pm-summary-table-wrap"><table class="pm-summary-table"><thead><tr><th>No</th><th>Jenis PM</th><th>Jumlah</th></tr></thead><tbody>${tableRows.map((r,i)=>`<tr class="${r[2]==='grand'?'grand-total':r[2]==='total'?'subtotal':''} ${r[2]==='orlep'?'orlep-clickable':''}"><td>${r[2]?'':i+1}</td><td>${escCalendar(r[0])}${r[2]==='orlep'?' <button type="button" class="orlep-detail-button" onclick="event.stopPropagation();openOrlepAllocationDetail(\'${iso}\')">Lihat rincian ↗</button>':''}</td><td>${Number(r[1]).toLocaleString('id-ID')}</td></tr>`).join('')}</tbody></table></div>${activityPanel}`;
  }catch(err){console.error(err);const detail=document.getElementById('pmCalendarDateDetail');if(detail)detail.innerHTML='<p>Gagal memuat rekap PM. Periksa koneksi Firebase.</p>';}
+}
+
+async function openPMCalendarFullDetail(iso){
+ const existing=document.getElementById('pmCalendarFullDetailOverlay');if(existing)existing.remove();
+ const overlay=document.createElement('div');overlay.className='pm-detail-overlay';overlay.id='pmCalendarFullDetailOverlay';overlay.style.zIndex='20020';
+ overlay.innerHTML=`<div class="pm-detail-dialog" role="dialog" aria-modal="true" style="width:calc(100vw - 40px);max-width:1250px;max-height:calc(100vh - 24px);padding:16px"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><div><h2 style="margin:0 0 3px">Rekap PM · ${escCalendar(formatDateID(iso))}</h2><p class="muted" style="margin:0;font-size:12px">Rekap sekolah, Posyandu per desa, dan total gabungan.</p></div><button class="btn btn-secondary" type="button" onclick="document.getElementById('pmCalendarFullDetailOverlay')?.remove()">✕ Tutup</button></div><div id="pmCalendarFullDetailContent" style="margin:14px 10px 10px;overflow:auto;max-height:calc(100vh - 105px);padding:0 6px 6px;box-sizing:border-box">Memuat rekap PM...</div></div>`;
+ overlay.addEventListener('click',e=>{if(e.target===overlay)overlay.remove()});document.body.appendChild(overlay);
+ try{
+  const [pm,schools,posyandu]=await Promise.all([pmRecordsAsOf(iso),all('schools'),all('posyandu')]);
+  const active=x=>String(x?.status||'').trim().toLowerCase()==='aktif';
+  const sm=new Map(schools.map(x=>[x.id,x])), po=new Map(posyandu.map(x=>[x.id,x]));
+  const records=pm.filter(x=>active(x)&&((['beneficiaries','teachers','staff'].includes(x.__store)&&active(sm.get(x.schoolId)))||(x.__store==='posyandu_recipients'&&active(po.get(x.posyanduId)))));
+  const label=x=>x.__store==='beneficiaries'?(String(x.beneficiaryType||'1')==='2'?'Guru':String(x.beneficiaryType||'1')==='3'?'Tendik':'Siswa'):x.__store==='teachers'?'Guru':x.__store==='staff'?'Tendik':`Posyandu - ${String(x.recipientType||x.jenisPenerima||'-')}`;
+  const place=x=>x.__store==='posyandu_recipients'?(po.get(x.posyanduId)?.name||po.get(x.posyanduId)?.nama||'-'):(sm.get(x.schoolId)?.name||sm.get(x.schoolId)?.nama||'-');
+  const name=x=>x.name||x.nama||x.fullName||x.namaLengkap||x.recipientName||'-';
+  records.sort((a,b)=>place(a).localeCompare(place(b),'id')||name(a).localeCompare(name(b),'id'));
+  const content=document.getElementById('pmCalendarFullDetailContent');if(!content)return;
+  const portion=x=>String(x.portionType||x.jenisPorsi||x.portion||'').trim().toLowerCase();
+  const isK=x=>portion(x)==='kecil'||portion(x)==='pk';
+  const isB=x=>portion(x)==='besar'||portion(x)==='pb';
+  const schoolRecords=records.filter(x=>['beneficiaries','teachers','staff'].includes(x.__store));
+  const schoolGroups={'SD':[], 'SMP':[], 'SMA/SMK':[], 'TK/PAUD/RA/KOBER':[], 'SIB':[], 'LAINNYA':[]};
+  schools.filter(active).forEach(sc=>{
+    const group=rekapSchoolGroup(sc.level); const list=schoolRecords.filter(x=>x.schoolId===sc.id);
+    const pk=list.filter(isK).length, pb=list.filter(isB).length;
+    schoolGroups[group].push({name:sc.name||sc.nama||'-',pk,pb});
+  });
+  let summaryHtml='<h3 style="margin:16px 0 8px">REKAP SEKOLAH</h3>';
+  let totalPK=0,totalPB=0;
+  Object.entries(schoolGroups).forEach(([group,list])=>{if(!list.length)return;let pk=0,pb=0;summaryHtml+=`<div style="overflow:auto;margin-bottom:12px"><table class="pm-summary-table"><thead><tr><th colspan="5">${escCalendar(group)}</th></tr><tr><th>No</th><th>${escCalendar(group)}</th><th>PK</th><th>PB</th><th>Jumlah</th></tr></thead><tbody>${list.map((it,i)=>{pk+=it.pk;pb+=it.pb;return `<tr><td>${i+1}</td><td>${escCalendar(it.name)}</td><td>${it.pk}</td><td>${it.pb}</td><td>${it.pk+it.pb}</td></tr>`}).join('')}<tr class="subtotal"><td></td><td><b>Jumlah</b></td><td><b>${pk}</b></td><td><b>${pb}</b></td><td><b>${pk+pb}</b></td></tr></tbody></table></div>`;totalPK+=pk;totalPB+=pb;});
+  const posRecords=records.filter(x=>x.__store==='posyandu_recipients');
+  const villages={};posyandu.filter(active).forEach(poItem=>{const village=String(poItem.village||poItem.desa||poItem.addressVillage||'Desa Tidak Diisi').trim()||'Desa Tidak Diisi';(villages[village]??=[]).push(poItem)});
+  let posPK=0,posPB=0;summaryHtml+='<h3 style="margin:16px 0 8px">REKAP POSYANDU PER DESA</h3>';
+  Object.entries(villages).forEach(([village,list])=>{let vk=0,vb=0;summaryHtml+=`<div style="overflow:auto;margin-bottom:12px"><table class="pm-summary-table"><thead><tr><th colspan="5">DESA ${escCalendar(village)}</th></tr><tr><th>No</th><th>POSYANDU</th><th>PK</th><th>PB</th><th>Jumlah</th></tr></thead><tbody>${list.sort((a,b)=>posyanduNameRank(a.name)-posyanduNameRank(b.name)||String(a.name||'').localeCompare(String(b.name||''),'id')).map((poItem,i)=>{const rr=posRecords.filter(x=>x.posyanduId===poItem.id);const pk=rr.filter(isK).length+1,pb=rr.filter(isB).length+1;vk+=pk;vb+=pb;return `<tr><td>${i+1}</td><td>${escCalendar(poItem.name||poItem.nama||'-')}</td><td>${pk}</td><td>${pb}</td><td>${pk+pb}</td></tr>`}).join('')}<tr class="subtotal"><td></td><td><b>Jumlah Desa ${escCalendar(village)}</b></td><td><b>${vk}</b></td><td><b>${vb}</b></td><td><b>${vk+vb}</b></td></tr></tbody></table></div>`;posPK+=vk;posPB+=vb;});
+  summaryHtml+=`<div style="overflow:auto;margin:12px 0"><table class="pm-summary-table"><thead><tr><th colspan="5">TOTAL KESELURUHAN SEKOLAH + POSYANDU</th></tr><tr><th>No</th><th>Sumber Data</th><th>PK</th><th>PB</th><th>Jumlah</th></tr></thead><tbody><tr><td>1</td><td>Total Sekolah</td><td>${totalPK}</td><td>${totalPB}</td><td>${totalPK+totalPB}</td></tr><tr><td>2</td><td>Total Posyandu (termasuk ORLEP)</td><td>${posPK}</td><td>${posPB}</td><td>${posPK+posPB}</td></tr><tr class="grand-total"><td></td><td><b>TOTAL KESELURUHAN</b></td><td><b>${totalPK+posPK}</b></td><td><b>${totalPB+posPB}</b></td><td><b>${totalPK+totalPB+posPK+posPB}</b></td></tr></tbody></table></div>`;
+  content.innerHTML=`<div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:6px;font-size:11px"><strong>Total PM aktif: ${records.length.toLocaleString('id-ID')}</strong><span class="muted">Tanggal: ${escCalendar(formatDateID(iso))}</span></div>${summaryHtml}`;
+ }catch(err){console.error(err);const content=document.getElementById('pmCalendarFullDetailContent');if(content)content.innerHTML='<p>Gagal memuat detail PM. Periksa koneksi Firebase.</p>';}
 }
 
 async function openOrlepAllocationDetail(iso){

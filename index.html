@@ -2179,7 +2179,7 @@ async function renderPMYearCalendar(){
 }
 async function openPMCalendarDate(iso){
  const overlay=document.createElement('div');overlay.className='pm-detail-overlay';overlay.id='pmCalendarDetailOverlay';
- overlay.innerHTML=`<div class="pm-detail-dialog" role="dialog" aria-modal="true" aria-labelledby="pmCalendarModalTitle" tabindex="-1"><div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap"><div><h2 id="pmCalendarModalTitle" style="margin:0 0 5px">Rekap PM ${escCalendar(formatDateID(iso))}</h2><p class="muted" style="margin:0">Ringkasan jumlah PM aktif yang berlaku pada tanggal ini.</p></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-primary" type="button" onclick="openPMCalendarFullDetail('${iso}')">📋 Detail PM</button><button class="btn btn-secondary" type="button" onclick="document.getElementById('pmCalendarDetailOverlay')?.remove()">✕ Tutup</button></div></div><div id="pmCalendarDateDetail" style="margin-top:16px">Memuat rekap...</div></div>`;
+ overlay.innerHTML=`<div class="pm-detail-dialog" role="dialog" aria-modal="true" aria-labelledby="pmCalendarModalTitle" tabindex="-1"><div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap"><div><h2 id="pmCalendarModalTitle" style="margin:0 0 5px">Rekap PM ${escCalendar(formatDateID(iso))}</h2><p class="muted" style="margin:0">Ringkasan jumlah PM aktif yang berlaku pada tanggal ini.</p></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-primary" type="button" onclick="downloadPMCalendarSummaryJPG('${iso}',this)">⬇️ Download Ringkasan JPG</button><button class="btn btn-primary" type="button" onclick="openPMCalendarFullDetail('${iso}')">📋 Detail PM</button><button class="btn btn-secondary" type="button" onclick="document.getElementById('pmCalendarDetailOverlay')?.remove()">✕ Tutup</button></div></div><div id="pmCalendarDateDetail" style="margin-top:16px">Memuat rekap...</div></div>`;
  overlay.addEventListener('click',e=>{if(e.target===overlay)overlay.remove()});document.body.appendChild(overlay);setTimeout(()=>overlay.querySelector('.pm-detail-dialog')?.focus(),0);
  try{
    const [pm,schools,posyandu]=await Promise.all([pmRecordsAsOf(iso),all('schools'),all('posyandu')]);
@@ -2228,10 +2228,39 @@ async function openPMCalendarDate(iso){
  }catch(err){console.error(err);const detail=document.getElementById('pmCalendarDateDetail');if(detail)detail.innerHTML='<p>Gagal memuat rekap PM. Periksa koneksi Firebase.</p>';}
 }
 
+async function downloadPMCalendarSummaryJPG(iso,button){
+ const source=document.getElementById('pmCalendarDateDetail');
+ if(!source){alert('Ringkasan PM tidak ditemukan.');return;}
+ const originalLabel=button?.innerHTML;
+ if(button){button.disabled=true;button.innerHTML='Menyiapkan JPG...';}
+ let exportRoot=null;
+ try{
+  if(typeof window.html2canvas!=='function'){
+   await new Promise((resolve,reject)=>{
+    const existing=document.querySelector('script[data-html2canvas-loader="true"]');
+    if(existing){if(typeof window.html2canvas==='function'){resolve();return;}existing.addEventListener('load',resolve,{once:true});existing.addEventListener('error',reject,{once:true});return;}
+    const script=document.createElement('script');script.src='https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';script.dataset.html2canvasLoader='true';script.onload=resolve;script.onerror=()=>reject(new Error('Pustaka gambar gagal dimuat'));document.head.appendChild(script);
+   });
+  }
+  if(typeof window.html2canvas!=='function')throw new Error('Pustaka JPG tidak tersedia');
+  exportRoot=document.createElement('div');
+  exportRoot.style.cssText='position:fixed;left:-100000px;top:0;width:900px;padding:28px;background:#fff;color:#172033;font-family:Arial,sans-serif;box-sizing:border-box;z-index:-1;';
+  exportRoot.innerHTML=`<h2 style="margin:0 0 6px;color:#1b4078;font-size:24px">Rekap PM ${escCalendar(formatDateID(iso))}</h2><p style="margin:0 0 18px;color:#64748b;font-size:14px">Ringkasan jumlah PM aktif yang berlaku pada tanggal ini.</p>`;
+  const clone=source.cloneNode(true);clone.removeAttribute('id');clone.style.cssText='width:100%;max-height:none;overflow:visible;';
+  clone.querySelectorAll('button').forEach(el=>{const span=document.createElement('span');span.textContent=el.textContent;span.style.cssText='font-size:11px;color:#64748b;margin-left:6px';el.replaceWith(span);});
+  clone.querySelectorAll('section').forEach(el=>{el.style.breakInside='avoid';});
+  exportRoot.appendChild(clone);document.body.appendChild(exportRoot);
+  await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+  const canvas=await window.html2canvas(exportRoot,{scale:2,backgroundColor:'#ffffff',useCORS:true,logging:false,scrollX:0,scrollY:0,width:exportRoot.scrollWidth,height:exportRoot.scrollHeight,windowWidth:Math.max(document.documentElement.clientWidth,exportRoot.scrollWidth),windowHeight:Math.max(window.innerHeight,exportRoot.scrollHeight)});
+  const link=document.createElement('a');link.download=`Ringkasan_PM_${iso}.jpg`;link.href=canvas.toDataURL('image/jpeg',0.95);document.body.appendChild(link);link.click();link.remove();
+ }catch(err){console.error(err);alert('Gagal membuat JPG ringkasan. Pastikan koneksi internet aktif, lalu coba kembali.');}
+ finally{if(exportRoot)exportRoot.remove();if(button){button.disabled=false;button.innerHTML=originalLabel||'⬇️ Download Ringkasan JPG';}}
+}
+
 async function openPMCalendarFullDetail(iso){
  const existing=document.getElementById('pmCalendarFullDetailOverlay');if(existing)existing.remove();
  const overlay=document.createElement('div');overlay.className='pm-detail-overlay';overlay.id='pmCalendarFullDetailOverlay';overlay.style.zIndex='20020';
- overlay.innerHTML=`<div class="pm-detail-dialog" role="dialog" aria-modal="true" style="width:calc(100vw - 40px);max-width:1250px;max-height:calc(100vh - 24px);padding:16px"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><div><h2 style="margin:0 0 3px">Rekap PM · ${escCalendar(formatDateID(iso))}</h2><p class="muted" style="margin:0;font-size:12px">Rekap sekolah, Posyandu per desa, dan total gabungan.</p></div><button class="btn btn-secondary" type="button" onclick="document.getElementById('pmCalendarFullDetailOverlay')?.remove()">✕ Tutup</button></div><div id="pmCalendarFullDetailContent" style="margin:14px 10px 10px;overflow:auto;max-height:calc(100vh - 105px);padding:0 6px 6px;box-sizing:border-box">Memuat rekap PM...</div></div>`;
+ overlay.innerHTML=`<div class="pm-detail-dialog" role="dialog" aria-modal="true" style="width:calc(100vw - 40px);max-width:1250px;max-height:calc(100vh - 24px);padding:16px"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><div><h2 style="margin:0 0 3px">Rekap PM · ${escCalendar(formatDateID(iso))}</h2><p class="muted" style="margin:0;font-size:12px">Rekap sekolah, Posyandu per desa, dan total gabungan.</p></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-primary" type="button" onclick="downloadPMCalendarRekapJPG('${iso}',this)">⬇️ Download JPG</button><button class="btn btn-secondary" type="button" onclick="document.getElementById('pmCalendarFullDetailOverlay')?.remove()">✕ Tutup</button></div></div><div id="pmCalendarFullDetailContent" style="margin:14px 10px 10px;overflow:auto;max-height:calc(100vh - 105px);padding:0 6px 6px;box-sizing:border-box">Memuat rekap PM...</div></div>`;
  overlay.addEventListener('click',e=>{if(e.target===overlay)overlay.remove()});document.body.appendChild(overlay);
  try{
   const [pm,schools,posyandu]=await Promise.all([pmRecordsAsOf(iso),all('schools'),all('posyandu')]);
@@ -2263,6 +2292,33 @@ async function openPMCalendarFullDetail(iso){
   summaryHtml+=`<div style="overflow:auto;margin:12px 0"><table class="pm-summary-table"><thead><tr><th colspan="5">TOTAL KESELURUHAN SEKOLAH + POSYANDU</th></tr><tr><th>No</th><th>Sumber Data</th><th>PK</th><th>PB</th><th>Jumlah</th></tr></thead><tbody><tr><td>1</td><td>Total Sekolah</td><td>${totalPK}</td><td>${totalPB}</td><td>${totalPK+totalPB}</td></tr><tr><td>2</td><td>Total Posyandu (termasuk ORLEP)</td><td>${posPK}</td><td>${posPB}</td><td>${posPK+posPB}</td></tr><tr class="grand-total"><td></td><td><b>TOTAL KESELURUHAN</b></td><td><b>${totalPK+posPK}</b></td><td><b>${totalPB+posPB}</b></td><td><b>${totalPK+totalPB+posPK+posPB}</b></td></tr></tbody></table></div>`;
   content.innerHTML=`<div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:6px;font-size:11px"><strong>Total PM aktif: ${records.length.toLocaleString('id-ID')}</strong><span class="muted">Tanggal: ${escCalendar(formatDateID(iso))}</span></div>${summaryHtml}`;
  }catch(err){console.error(err);const content=document.getElementById('pmCalendarFullDetailContent');if(content)content.innerHTML='<p>Gagal memuat detail PM. Periksa koneksi Firebase.</p>';}
+}
+
+async function downloadPMCalendarRekapJPG(iso,button){
+ const content=document.getElementById('pmCalendarFullDetailContent');
+ if(!content){alert('Tabel rekap tidak ditemukan.');return;}
+ const originalLabel=button?.innerHTML;
+ if(button){button.disabled=true;button.innerHTML='Menyiapkan JPG...';}
+ let oldMaxHeight='',oldOverflow='',oldHeight='',oldWidth='';
+ try{
+  if(typeof window.html2canvas!=='function'){
+   await new Promise((resolve,reject)=>{
+    const existing=document.querySelector('script[data-html2canvas-loader="true"]');
+    if(existing){existing.addEventListener('load',resolve,{once:true});existing.addEventListener('error',reject,{once:true});return;}
+    const script=document.createElement('script');script.src='https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';script.dataset.html2canvasLoader='true';script.onload=resolve;script.onerror=()=>reject(new Error('Pustaka gambar gagal dimuat'));document.head.appendChild(script);
+   });
+  }
+  if(typeof window.html2canvas!=='function')throw new Error('Fitur JPG belum tersedia. Pastikan koneksi internet aktif.');
+  oldMaxHeight=content.style.maxHeight;oldOverflow=content.style.overflow;oldHeight=content.style.height;oldWidth=content.style.width;
+  content.style.maxHeight='none';content.style.overflow='visible';content.style.height='auto';content.style.width='100%';
+  await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+  const canvas=await window.html2canvas(content,{scale:2,backgroundColor:'#ffffff',useCORS:true,logging:false,scrollX:0,scrollY:0,width:content.scrollWidth,height:content.scrollHeight,windowWidth:Math.max(document.documentElement.clientWidth,content.scrollWidth),windowHeight:Math.max(window.innerHeight,content.scrollHeight)});
+  const link=document.createElement('a');link.download=`Rekap_PM_${iso}.jpg`;link.href=canvas.toDataURL('image/jpeg',0.95);document.body.appendChild(link);link.click();link.remove();
+ }catch(err){console.error(err);alert('Gagal membuat JPG. Pastikan koneksi internet aktif, lalu coba kembali.');}
+ finally{
+  content.style.maxHeight=oldMaxHeight;content.style.overflow=oldOverflow;content.style.height=oldHeight;content.style.width=oldWidth;
+  if(button){button.disabled=false;button.innerHTML=originalLabel||'⬇️ Download JPG';}
+ }
 }
 
 async function openOrlepAllocationDetail(iso){

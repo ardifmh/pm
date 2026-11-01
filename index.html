@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SPPG CIKASO - Data Penerima Manfaat</title>
+<title>SPPG CIKASO - Data Penerima Manfaat + Pengurangan PM Libur</title>
 <style>
 :root{--primary:#1769aa;--primary2:#0d47a1;--bg:#f4f7fb;--card:#fff;--text:#1f2937;--muted:#6b7280;--border:#e5e7eb;--danger:#dc2626;--success:#16a34a;--warning:#d97706}
 *{box-sizing:border-box}body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--text)}
@@ -230,6 +230,7 @@ button,input,select{font:inherit}.app{display:flex;min-height:100vh}
     <div class="group">Utama</div>
     <button class="active" onclick="showPage('dashboard',this)">🏠 Dashboard</button>
     <button onclick="showPage('kalenderPM',this)">🗓️ Kalender PM Tahunan</button>
+    <button onclick="showPage('penguranganPM',this)">🏖️ Pengurangan PM Libur</button>
     <div class="group">Master Data</div>
     <button onclick="showPage('schools',this)">🏫 Sekolah</button>
     <button onclick="showPage('students',this)">👨‍🎓 Siswa</button>
@@ -289,6 +290,23 @@ button,input,select{font:inherit}.app{display:flex;min-height:100vh}
 <section id="kalenderPM" class="page">
   <div class="top"><div><h1>Kalender PM Tahunan</h1><p>Jumlah PM setiap tanggal selama satu tahun. Klik tanggal untuk membuka detail penerima manfaat yang berlaku pada tanggal tersebut.</p></div><div style="display:flex;align-items:center;gap:8px"><button class="btn btn-secondary" type="button" onclick="changePMCalendarYear(-1)">◀ Tahun Sebelumnya</button><strong id="pmCalendarYearLabel" style="font-size:18px"></strong><button class="btn btn-secondary" type="button" onclick="changePMCalendarYear(1)">Tahun Berikutnya ▶</button></div></div>
   <div class="section card" id="pmYearCalendarCard"><div id="pmYearCalendar" class="pm-year-grid"><div class="muted">Memuat kalender...</div></div><div class="muted" style="font-size:12px;margin-top:10px">Jumlah menunjukkan PM aktif yang berlaku pada tanggal tersebut menurut data dan riwayat periode yang tersimpan.</div></div>
+</section>
+
+<section id="penguranganPM" class="page">
+ <div class="top"><div><h1>Pengurangan PM Saat Libur</h1><p>Catat jumlah siswa yang libur pada sekolah dan tanggal tertentu. Data master siswa tidak diubah.</p></div></div>
+ <div class="card" style="margin-bottom:16px">
+  <h3 style="margin:0 0 12px">Tambah Pengurangan PM</h3>
+  <form id="holidayForm" class="form" onsubmit="saveSchoolHoliday(event)">
+   <div class="field"><label>Sekolah</label><select id="holidaySchool" required><option value="">Pilih sekolah</option></select></div>
+   <div class="field"><label>Mulai tanggal libur</label><input id="holidayDateFrom" type="date" required></div>
+   <div class="field"><label>Sampai tanggal (boleh sama)</label><input id="holidayDateTo" type="date" required></div>
+   <div class="field"><label>Jumlah siswa libur Porsi Kecil (PK)</label><input id="holidayPK" type="number" min="0" step="1" value="0" required></div>
+   <div class="field"><label>Jumlah siswa libur Porsi Besar (PB)</label><input id="holidayPB" type="number" min="0" step="1" value="0" required></div>
+   <div class="field full"><label>Keterangan (opsional)</label><input id="holidayNote" type="text" placeholder="Contoh: Kelas 1–2 libur, kelas 3 ujian"></div>
+   <div class="field full"><button class="btn btn-primary" type="submit">Simpan Pengurangan PM</button><div class="muted">Pengurangan berlaku pada seluruh rentang tanggal yang dipilih (termasuk tanggal awal dan akhir). Maksimal pengurangan mengikuti jumlah siswa aktif pada sekolah tersebut.</div></div>
+  </form>
+ </div>
+ <div class="card table-card"><div class="section-head" style="padding:16px 16px 0"><h2>Riwayat Pengurangan PM</h2><span class="muted">Dapat diedit atau dihapus</span></div><div id="holidayTable" style="overflow:auto"></div></div>
 </section>
 
 <section id="schools" class="page">
@@ -612,6 +630,18 @@ function periodRecordsFor(date){
  return pmRecordsAsOf(mondayISO(date));
 }
 
+// Pengurangan PM bersifat khusus per sekolah dan tanggal; tidak mengubah master siswa.
+async function holidayAdjustments(){return all('school_holiday_adjustments').catch(()=>[])}
+function holidayForSchool(adjustments,date,schoolId){const d=String(date||'').slice(0,10);return (adjustments||[]).filter(x=>{const from=String(x.dateFrom||x.date||'').slice(0,10),to=String(x.dateTo||x.dateFrom||x.date||'').slice(0,10);return x.schoolId===schoolId&&from&&to&&d>=from&&d<=to}).reduce((a,x)=>({pk:a.pk+Math.max(0,Number(x.pkOff)||0),pb:a.pb+Math.max(0,Number(x.pbOff)||0)}),{pk:0,pb:0})}
+function applyHolidayToSchoolCounts(pk,pb,adjustment){return {pk:Math.max(0,pk-(adjustment?.pk||0)),pb:Math.max(0,pb-(adjustment?.pb||0))}}
+async function fillHolidaySchools(){const list=await all('schools');const el=document.getElementById('holidaySchool');if(!el)return;const old=el.value;el.innerHTML='<option value="">Pilih sekolah</option>'+list.filter(x=>String(x.status||'Aktif').toLowerCase()==='aktif').sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''),'id')).map(x=>`<option value="${esc(x.id)}">${esc(x.name||'-')}</option>`).join('');if(old)el.value=old;}
+let currentHolidayEditId=null;
+async function saveSchoolHoliday(event){event.preventDefault();try{const schoolId=document.getElementById('holidaySchool').value,dateFrom=document.getElementById('holidayDateFrom').value,dateTo=document.getElementById('holidayDateTo').value,pkOff=Math.max(0,parseInt(document.getElementById('holidayPK').value||'0',10)),pbOff=Math.max(0,parseInt(document.getElementById('holidayPB').value||'0',10)),note=document.getElementById('holidayNote').value.trim();if(!schoolId||!dateFrom||!dateTo)throw new Error('Pilih sekolah dan rentang tanggal terlebih dahulu.');if(dateTo<dateFrom)throw new Error('Tanggal sampai tidak boleh lebih awal dari tanggal mulai.');if(pkOff+pbOff<=0)throw new Error('Isi jumlah siswa libur PK dan/atau PB.');const [schools,pm,adjustments]=await Promise.all([all('schools'),pmRecordsAsOf(dateFrom),holidayAdjustments()]);const school=schools.find(x=>x.id===schoolId);if(!school)throw new Error('Sekolah tidak ditemukan.');const active=pm.filter(x=>x.__store==='beneficiaries'&&x.schoolId===schoolId&&String(x.status||'').toLowerCase()==='aktif');const pk=active.filter(x=>String(x.portionType||'').toLowerCase()==='kecil').length,pb=active.filter(x=>String(x.portionType||'').toLowerCase()==='besar').length;const old=adjustments.find(x=>x.id===currentHolidayEditId)||adjustments.find(x=>x.schoolId===schoolId&&(x.dateFrom||x.date)===dateFrom&&(x.dateTo||x.dateFrom||x.date)===dateTo);const prior=old?{pk:old.pkOff||0,pb:old.pbOff||0}:{pk:0,pb:0};if(pkOff>pk+prior.pk||pbOff>pb+prior.pb)throw new Error(`Jumlah libur melebihi siswa aktif pada tanggal mulai. Tersedia PK ${pk}, PB ${pb}.`);const id=currentHolidayEditId||old?.id||`${schoolId}_${dateFrom}_${dateTo}`;await db.collection('school_holiday_adjustments').doc(id).set({schoolId,schoolName:school.name||'-',dateFrom,dateTo,pkOff,pbOff,note,createdAt:old?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()},{merge:true});currentHolidayEditId=null;document.getElementById('holidayForm').reset();document.getElementById('holidayPK').value='0';document.getElementById('holidayPB').value='0';document.getElementById('holidayDateFrom').value=dayISO();document.getElementById('holidayDateTo').value=dayISO();await renderSchoolHolidays();await refresh();toast('Pengurangan PM berhasil disimpan.');}catch(e){alert(e.message||'Gagal menyimpan pengurangan PM.');}}
+async function renderSchoolHolidays(){await fillHolidaySchools();const dateFrom=document.getElementById('holidayDateFrom'),dateTo=document.getElementById('holidayDateTo');if(dateFrom&&!dateFrom.value)dateFrom.value=dayISO();if(dateTo&&!dateTo.value)dateTo.value=dateFrom?.value||dayISO();const [rows,schools]=await Promise.all([holidayAdjustments(),all('schools')]);const sm=new Map(schools.map(x=>[x.id,x]));rows.sort((a,b)=>String(b.dateFrom||b.date||'').localeCompare(String(a.dateFrom||a.date||''))||String(a.schoolName).localeCompare(String(b.schoolName),'id'));const host=document.getElementById('holidayTable');if(!host)return;host.innerHTML=rows.length?table(['Rentang Tanggal','Sekolah','Libur PK','Libur PB','Total','Keterangan','Aksi'],rows.map(x=>{const from=x.dateFrom||x.date,to=x.dateTo||x.dateFrom||x.date;return `<tr><td>${esc(formatDateDisplay(from))}${to!==from?' – '+esc(formatDateDisplay(to)):''}</td><td><b>${esc(sm.get(x.schoolId)?.name||x.schoolName||'-')}</b></td><td>${Number(x.pkOff)||0}</td><td>${Number(x.pbOff)||0}</td><td><b>${(Number(x.pkOff)||0)+(Number(x.pbOff)||0)}</b></td><td>${esc(x.note||'-')}</td><td><div class="actions"><button class="btn-secondary" onclick="editSchoolHoliday('${esc(x.id)}')">Edit</button><button class="btn-danger" onclick="deleteSchoolHoliday('${esc(x.id)}')">Hapus</button></div></td></tr>`})): '<div class="empty">Belum ada data pengurangan PM libur.</div>';}
+async function editSchoolHoliday(id){const rows=await holidayAdjustments(),x=rows.find(a=>a.id===id);if(!x)return;currentHolidayEditId=id;await fillHolidaySchools();document.getElementById('holidaySchool').value=x.schoolId;document.getElementById('holidayDateFrom').value=x.dateFrom||x.date;document.getElementById('holidayDateTo').value=x.dateTo||x.dateFrom||x.date;document.getElementById('holidayPK').value=x.pkOff||0;document.getElementById('holidayPB').value=x.pbOff||0;document.getElementById('holidayNote').value=x.note||'';toast('Ubah isian lalu tekan Simpan Pengurangan PM.');}
+
+async function deleteSchoolHoliday(id){if(!confirm('Hapus pengurangan PM ini?'))return;if(currentHolidayEditId===id)currentHolidayEditId=null;await db.collection('school_holiday_adjustments').doc(id).delete();await renderSchoolHolidays();await refresh();toast('Pengurangan PM dihapus.');}
+
 function loginFirebase(){const email=document.getElementById('loginEmail').value.trim(),pass=document.getElementById('loginPassword').value;const er=document.getElementById('loginError');er.style.display='none';auth.signInWithEmailAndPassword(email,pass).catch(e=>{er.textContent='Login gagal: '+e.message;er.style.display='block'})}
 function logoutFirebase(){auth.signOut()}
 auth.onAuthStateChanged(async user=>{currentUser=user;const screen=document.getElementById('loginScreen'),root=document.getElementById('appRoot');if(user){screen.style.display='none';root.style.display='flex';document.getElementById('userEmail').textContent=user.email||'';try{await refresh()}catch(e){alert('Gagal membaca Firebase: '+e.message)}}else{screen.style.display='flex';root.style.display='none'}});
@@ -657,6 +687,7 @@ function showPage(id,btn){
  }
  document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
  page.classList.add('active');
+ if(id==='penguranganPM')renderSchoolHolidays();
  document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('active'));
  if(btn)btn.classList.add('active');
  refresh()
@@ -1676,6 +1707,7 @@ async function dashboard(){
    all('posyandu_recipients'),
    pmRecordsAsOf(period.end)
  ]);
+ const holidayRows=await holidayAdjustments();
 
  const isActive=x=>String(x?.status||'').trim().toLowerCase()==='aktif';
  const active=x=>x.filter(isActive);
@@ -1706,7 +1738,9 @@ async function dashboard(){
  const activeSchoolStudents=activeStudents.filter(x=>activeSchoolIds.has(x.schoolId));
  const activeSchoolTeachers=activeTeachers.filter(x=>activeSchoolIds.has(x.schoolId));
  const activeSchoolStaff=activeStaff.filter(x=>activeSchoolIds.has(x.schoolId));
- const totalPMSekolah=activeSchoolStudents.length+activeSchoolTeachers.length+activeSchoolStaff.length;
+ const rawTotalPMSekolah=activeSchoolStudents.length+activeSchoolTeachers.length+activeSchoolStaff.length;
+ const schoolHolidayTotal=activeSchools.reduce((n,sc)=>{const a=holidayForSchool(holidayRows,period.end,sc.id);return n+a.pk+a.pb;},0);
+ const totalPMSekolah=Math.max(0,rawTotalPMSekolah-schoolHolidayTotal);
 
  // PM Posyandu hanya dihitung jika PM dan Posyandu induknya sama-sama aktif.
  const activePosyanduIds=new Set(activePosyandu.map(x=>x.id));
@@ -1736,14 +1770,16 @@ async function dashboard(){
 
  let rows=activeSchools.map((x,i)=>{
    const students=studentRowsBySchool.get(x.id)||[];
-   const pk=students.filter(a=>portionOf(a)==='kecil').length;
-   const pb=students.filter(a=>portionOf(a)==='besar').length;
+   const rawPk=students.filter(a=>portionOf(a)==='kecil').length;
+   const rawPb=students.filter(a=>portionOf(a)==='besar').length;
+   const adj=holidayForSchool(holidayRows,period.end,x.id);
+   const pk=Math.max(0,rawPk-adj.pk),pb=Math.max(0,rawPb-adj.pb),shownStudents=Math.max(0,students.length-adj.pk-adj.pb);
    return `<tr>
      <td class="center">${i+1}</td>
      <td>${esc(x.code||'-')}</td>
      <td><b>${esc(x.name||'-')}</b></td>
      <td>${esc(x.level||'-')}</td>
-     <td>${students.length}</td>
+     <td>${shownStudents}</td>
      <td>${pk}</td>
      <td>${pb}</td>
      <td>${activeSchoolTeachers.filter(a=>a.schoolId===x.id).length}</td>
@@ -1773,6 +1809,7 @@ async function dashboard(){
    if(pt==='besar') groupMap[g].pb++;
    groupMap[g].total++;
  });
+ activeSchools.forEach(sc=>{const g=schoolGroup(sc);if(!groupMap[g])return;const h=holidayForSchool(holidayRows,period.end,sc.id);groupMap[g].pk=Math.max(0,groupMap[g].pk-h.pk);groupMap[g].pb=Math.max(0,groupMap[g].pb-h.pb);groupMap[g].total=Math.max(0,groupMap[g].total-h.pk-h.pb);});
  const groupRows=groupOrder.map((g,i)=>`<tr>
    <td class="center">${i+1}</td><td><b>${esc(g)}</b></td><td>${groupMap[g].pk}</td><td>${groupMap[g].pb}</td><td><b>${groupMap[g].total}</b></td>
  </tr>`);
@@ -1881,8 +1918,8 @@ async function renderRekap(){
 
  const selected=dateEl?.value||dayISO();
  const period=weeklyPeriod(selected);
- const [schools,posyandu,pmAtDate]=await Promise.all([
-   all('schools'),all('posyandu'),pmRecordsAsOf(period.end)
+ const [schools,posyandu,pmAtDate,holidayRows]=await Promise.all([
+   all('schools'),all('posyandu'),pmRecordsAsOf(period.end),holidayAdjustments()
  ]);
  const students=pmAtDate.filter(x=>x.__store==='beneficiaries');
  const teachers=pmAtDate.filter(x=>x.__store==='teachers');
@@ -1900,8 +1937,9 @@ async function renderRekap(){
  schools.filter(isActive).forEach(s=>{
    const records=schoolPM.filter(x=>x.schoolId===s.id);
    const c=portionCounts(records);
+   const adjusted=applyHolidayToSchoolCounts(c.kecil,c.besar,holidayForSchool(holidayRows,period.end,s.id));
    groups[rekapSchoolGroup(s.level)].push({
-     school:s,kecil:c.kecil,besar:c.besar,total:c.kecil+c.besar
+     school:s,kecil:adjusted.pk,besar:adjusted.pb,total:adjusted.pk+adjusted.pb
    });
  });
 
@@ -2145,7 +2183,7 @@ async function renderPMYearCalendar(){
  host.innerHTML='<div class="muted">Menghitung jumlah PM harian...</div>';
  try{
    // Satu pengambilan data per render, lalu gunakan fungsi snapshot periode yang sama dengan Dashboard.
-   const [current,history,schools,posyandu,activityRows]=await Promise.all([Promise.all(PM_STORES.map(all)),all('pm_history').catch(()=>[]),all('schools'),all('posyandu'),all('pm_activity').catch(()=>[])]);
+   const [current,history,schools,posyandu,activityRows,holidayRows]=await Promise.all([Promise.all(PM_STORES.map(all)),all('pm_history').catch(()=>[]),all('schools'),all('posyandu'),all('pm_activity').catch(()=>[]),holidayAdjustments()]);
    if(token!==pmCalendarRenderToken)return;
    const schoolMap=new Map(schools.map(x=>[x.id,x])),posMap=new Map(posyandu.map(x=>[x.id,x]));
    const isActive=x=>String(x?.status||'').trim().toLowerCase()==='aktif';
@@ -2160,7 +2198,8 @@ async function renderPMYearCalendar(){
      ));
      // Setiap Posyandu mendapat alokasi ORLEP 2 porsi per hari/tanggal.
      const activePosyandu=posyandu.filter(isActive).length;
-     countsByDate[iso]=pm.length+(activePosyandu*2);
+     const holidayTotal=schools.filter(isActive).reduce((n,sc)=>{const a=holidayForSchool(holidayRows,iso,sc.id);return n+a.pk+a.pb;},0);
+     countsByDate[iso]=Math.max(0,pm.length-holidayTotal)+(activePosyandu*2);
    }
    const months=['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
    const wd=['Min','Sen','Sel','Rab','Kam','Jum','Sab'];
@@ -2182,7 +2221,7 @@ async function openPMCalendarDate(iso){
  overlay.innerHTML=`<div class="pm-detail-dialog" role="dialog" aria-modal="true" aria-labelledby="pmCalendarModalTitle" tabindex="-1"><div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap"><div><h2 id="pmCalendarModalTitle" style="margin:0 0 5px">Rekap PM ${escCalendar(formatDateID(iso))}</h2><p class="muted" style="margin:0">Ringkasan jumlah PM aktif yang berlaku pada tanggal ini.</p></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-primary" type="button" onclick="downloadPMCalendarSummaryJPG('${iso}',this)">⬇️ Download Ringkasan JPG</button><button class="btn btn-primary" type="button" onclick="openPMCalendarFullDetail('${iso}')">📋 Detail PM</button><button class="btn btn-secondary" type="button" onclick="document.getElementById('pmCalendarDetailOverlay')?.remove()">✕ Tutup</button></div></div><div id="pmCalendarDateDetail" style="margin-top:16px">Memuat rekap...</div></div>`;
  overlay.addEventListener('click',e=>{if(e.target===overlay)overlay.remove()});document.body.appendChild(overlay);setTimeout(()=>overlay.querySelector('.pm-detail-dialog')?.focus(),0);
  try{
-   const [pm,schools,posyandu]=await Promise.all([pmRecordsAsOf(iso),all('schools'),all('posyandu')]);
+   const [pm,schools,posyandu,holidayRows]=await Promise.all([pmRecordsAsOf(iso),all('schools'),all('posyandu'),holidayAdjustments()]);
    const active=x=>String(x?.status||'').trim().toLowerCase()==='aktif';
    const sm=new Map(schools.map(x=>[x.id,x])),posMap=new Map(posyandu.map(x=>[x.id,x]));
    const rows=pm.filter(x=>active(x)&&((['beneficiaries','teachers','staff'].includes(x.__store)&&active(sm.get(x.schoolId)))||(x.__store==='posyandu_recipients'&&active(posMap.get(x.posyanduId)))));
@@ -2194,10 +2233,15 @@ async function openPMCalendarDate(iso){
    const isSD=x=>/^(SD|MI)$/.test(schoolLevel(x));
    const isSMP=x=>/^(SMP|MTS|MTs)$/.test(schoolLevel(x));
    const isSMA=x=>/^(SMA|SMK|MA)$/.test(schoolLevel(x));
-   const tkpaud=students.filter(isTKPAUD).length;
-   const sdKecil=students.filter(x=>isSD(x)&&portion(x)==='kecil').length;
-   const sdBesar=students.filter(x=>isSD(x)&&portion(x)==='besar').length;
-   const smp=students.filter(isSMP).length,sma=students.filter(isSMA).length;
+   const rawTKPAUD=students.filter(isTKPAUD).length;
+   const rawSDKecil=students.filter(x=>isSD(x)&&portion(x)==='kecil').length;
+   const rawSDBesar=students.filter(x=>isSD(x)&&portion(x)==='besar').length;
+   const adjustmentByLevel={tk:0,sd:{pk:0,pb:0},smp:0,sma:0};
+   schools.filter(active).forEach(sc=>{const h=holidayForSchool(holidayRows,iso,sc.id),lv=String(sc.level||'').trim().toUpperCase();if(/^(TK|PAUD|KB|KOBER|RA)$/.test(lv))adjustmentByLevel.tk+=h.pk+h.pb;else if(/^(SD|MI)$/.test(lv)){adjustmentByLevel.sd.pk+=h.pk;adjustmentByLevel.sd.pb+=h.pb;}else if(/^(SMP|MTS)$/.test(lv))adjustmentByLevel.smp+=h.pk+h.pb;else if(/^(SMA|SMK|MA)$/.test(lv))adjustmentByLevel.sma+=h.pk+h.pb;});
+   const tkpaud=Math.max(0,rawTKPAUD-adjustmentByLevel.tk);
+   const sdKecil=Math.max(0,rawSDKecil-adjustmentByLevel.sd.pk);
+   const sdBesar=Math.max(0,rawSDBesar-adjustmentByLevel.sd.pb);
+   const smp=Math.max(0,students.filter(isSMP).length-adjustmentByLevel.smp),sma=Math.max(0,students.filter(isSMA).length-adjustmentByLevel.sma);
    const totalSiswa=tkpaud+sdKecil+sdBesar+smp+sma;
    const guru=rows.filter(x=>x.__store==='teachers'||(x.__store==='beneficiaries'&&String(x.beneficiaryType)==='2')).length;
    const tendik=rows.filter(x=>x.__store==='staff'||(x.__store==='beneficiaries'&&String(x.beneficiaryType)==='3')).length;
@@ -2223,7 +2267,11 @@ async function openPMCalendarDate(iso){
      if(a.eventType==='school_edit')return `Perubahan data Sekolah ${a.name||place}`;
      return `Aktivitas ${type} ${place}`;
    };
-   const activityPanel=`<section class="pm-day-activity" style="margin-top:16px;border:1px solid #dbe4f0;border-radius:12px;overflow:hidden;background:#fff"><div style="padding:12px 14px;background:#eef4ff;border-bottom:1px solid #dbe4f0;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><strong>Aktivitas pada ${escCalendar(formatDateID(iso))}</strong><span style="font-size:12px;color:#64748b">${dayActivities.length} aktivitas</span></div>${dayActivities.length?`<ul style="list-style:none;margin:0;padding:0">${dayActivities.map((a,i)=>`<li style="display:flex;gap:10px;align-items:flex-start;padding:11px 14px;border-bottom:${i===dayActivities.length-1?'0':'1px solid #edf1f6'}"><span style="display:inline-flex;align-items:center;justify-content:center;min-width:30px;height:30px;border-radius:8px;background:${a.eventType==='delete'?'#fee2e2':a.eventType==='input'?'#dcfce7':'#e0e7ff'};color:${a.eventType==='delete'?'#b91c1c':a.eventType==='input'?'#166534':'#3730a3'};font-weight:800">${a.eventType==='delete'?'−':a.eventType==='input'?'+':'↻'}</span><div style="flex:1;min-width:0"><div style="font-weight:650;color:#1e293b">${escCalendar(activityText(a))}</div><div style="font-size:12px;color:#64748b;margin-top:3px">${escCalendar(a.name||'-')}${a.identity&&a.identity!=='-'?' · '+escCalendar(a.identity):''}</div></div><time style="white-space:nowrap;font-size:11px;color:#64748b">${escCalendar(new Date(a.changedAt||a.createdAt||'').toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'}))}</time></li>`).join('')}</ul>`:`<div style="padding:18px;text-align:center;color:#64748b">Belum ada aktivitas PM yang tercatat pada tanggal ini.</div>`}</section>`;
+   const holidayActivities=holidayRows.filter(h=>{const from=String(h.dateFrom||h.date||'').slice(0,10),to=String(h.dateTo||h.dateFrom||h.date||'').slice(0,10);return from&&to&&iso>=from&&iso<=to&&(Number(h.pkOff||0)+Number(h.pbOff||0)>0)}).map(h=>({school:h.schoolName||sm.get(h.schoolId)?.name||'Sekolah tidak diketahui',pk:Number(h.pkOff)||0,pb:Number(h.pbOff)||0,total:(Number(h.pkOff)||0)+(Number(h.pbOff)||0),note:h.note||''}));
+   const activityCount=dayActivities.length+holidayActivities.length;
+   const holidayActivityHTML=holidayActivities.map((h,i)=>`<li style="display:flex;gap:10px;align-items:flex-start;padding:11px 14px;border-bottom:${i===holidayActivities.length-1&&dayActivities.length===0?'0':'1px solid #edf1f6'}"><span style="display:inline-flex;align-items:center;justify-content:center;min-width:30px;height:30px;border-radius:8px;background:#fef3c7;color:#92400e;font-weight:800">🏖</span><div style="flex:1;min-width:0"><div style="font-weight:700;color:#92400e">Libur sekolah: ${escCalendar(h.school)}</div><div style="font-size:12px;color:#475569;margin-top:3px">Tidak masuk: <b>${h.total.toLocaleString('id-ID')} siswa</b> (PK ${h.pk.toLocaleString('id-ID')} · PB ${h.pb.toLocaleString('id-ID')})${h.note?' · '+escCalendar(h.note):''}</div></div><span style="white-space:nowrap;font-size:11px;color:#92400e">Libur</span></li>`).join('');
+   const regularActivityHTML=dayActivities.map((a,i)=>`<li style="display:flex;gap:10px;align-items:flex-start;padding:11px 14px;border-bottom:${i===dayActivities.length-1?'0':'1px solid #edf1f6'}"><span style="display:inline-flex;align-items:center;justify-content:center;min-width:30px;height:30px;border-radius:8px;background:${a.eventType==='delete'?'#fee2e2':a.eventType==='input'?'#dcfce7':'#e0e7ff'};color:${a.eventType==='delete'?'#b91c1c':a.eventType==='input'?'#166534':'#3730a3'};font-weight:800">${a.eventType==='delete'?'−':a.eventType==='input'?'+':'↻'}</span><div style="flex:1;min-width:0"><div style="font-weight:650;color:#1e293b">${escCalendar(activityText(a))}</div><div style="font-size:12px;color:#64748b;margin-top:3px">${escCalendar(a.name||'-')}${a.identity&&a.identity!=='-'?' · '+escCalendar(a.identity):''}</div></div><time style="white-space:nowrap;font-size:11px;color:#64748b">${escCalendar(new Date(a.changedAt||a.createdAt||'').toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'}))}</time></li>`).join('');
+   const activityPanel=`<section class="pm-day-activity" style="margin-top:16px;border:1px solid #dbe4f0;border-radius:12px;overflow:hidden;background:#fff"><div style="padding:12px 14px;background:#eef4ff;border-bottom:1px solid #dbe4f0;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><strong>Aktivitas pada ${escCalendar(formatDateID(iso))}</strong><span style="font-size:12px;color:#64748b">${activityCount} aktivitas</span></div>${activityCount?`<ul style="list-style:none;margin:0;padding:0">${holidayActivityHTML}${regularActivityHTML}</ul>`:`<div style="padding:18px;text-align:center;color:#64748b">Belum ada aktivitas PM atau informasi libur sekolah pada tanggal ini.</div>`}</section>`;
    detail.innerHTML=`<div class="pm-summary-table-wrap"><table class="pm-summary-table"><thead><tr><th>No</th><th>Jenis PM</th><th>Jumlah</th></tr></thead><tbody>${tableRows.map((r,i)=>`<tr class="${r[2]==='grand'?'grand-total':r[2]==='total'?'subtotal':''} ${r[2]==='orlep'?'orlep-clickable':''}"><td>${r[2]?'':i+1}</td><td>${escCalendar(r[0])}${r[2]==='orlep'?' <button type="button" class="orlep-detail-button" onclick="event.stopPropagation();openOrlepAllocationDetail(\'${iso}\')">Lihat rincian ↗</button>':''}</td><td>${Number(r[1]).toLocaleString('id-ID')}</td></tr>`).join('')}</tbody></table></div>${activityPanel}`;
  }catch(err){console.error(err);const detail=document.getElementById('pmCalendarDateDetail');if(detail)detail.innerHTML='<p>Gagal memuat rekap PM. Periksa koneksi Firebase.</p>';}
 }
@@ -2263,7 +2311,7 @@ async function openPMCalendarFullDetail(iso){
  overlay.innerHTML=`<div class="pm-detail-dialog" role="dialog" aria-modal="true" style="width:calc(100vw - 40px);max-width:1250px;max-height:calc(100vh - 24px);padding:16px"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><div><h2 style="margin:0 0 3px">Rekap PM · ${escCalendar(formatDateID(iso))}</h2><p class="muted" style="margin:0;font-size:12px">Rekap sekolah, Posyandu per desa, dan total gabungan.</p></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-primary" type="button" onclick="downloadPMCalendarRekapJPG('${iso}',this)">⬇️ Download JPG</button><button class="btn btn-secondary" type="button" onclick="document.getElementById('pmCalendarFullDetailOverlay')?.remove()">✕ Tutup</button></div></div><div id="pmCalendarFullDetailContent" style="margin:14px 10px 10px;overflow:auto;max-height:calc(100vh - 105px);padding:0 6px 6px;box-sizing:border-box">Memuat rekap PM...</div></div>`;
  overlay.addEventListener('click',e=>{if(e.target===overlay)overlay.remove()});document.body.appendChild(overlay);
  try{
-  const [pm,schools,posyandu]=await Promise.all([pmRecordsAsOf(iso),all('schools'),all('posyandu')]);
+  const [pm,schools,posyandu,holidayRows]=await Promise.all([pmRecordsAsOf(iso),all('schools'),all('posyandu'),holidayAdjustments()]);
   const active=x=>String(x?.status||'').trim().toLowerCase()==='aktif';
   const sm=new Map(schools.map(x=>[x.id,x])), po=new Map(posyandu.map(x=>[x.id,x]));
   const records=pm.filter(x=>active(x)&&((['beneficiaries','teachers','staff'].includes(x.__store)&&active(sm.get(x.schoolId)))||(x.__store==='posyandu_recipients'&&active(po.get(x.posyanduId)))));
@@ -2279,7 +2327,8 @@ async function openPMCalendarFullDetail(iso){
   const schoolGroups={'SD':[], 'SMP':[], 'SMA/SMK':[], 'TK/PAUD/RA/KOBER':[], 'SIB':[], 'LAINNYA':[]};
   schools.filter(active).forEach(sc=>{
     const group=rekapSchoolGroup(sc.level); const list=schoolRecords.filter(x=>x.schoolId===sc.id);
-    const pk=list.filter(isK).length, pb=list.filter(isB).length;
+    const rawPk=list.filter(isK).length, rawPb=list.filter(isB).length;
+    const adj=holidayForSchool(holidayRows,iso,sc.id);const pk=Math.max(0,rawPk-adj.pk),pb=Math.max(0,rawPb-adj.pb);
     schoolGroups[group].push({name:sc.name||sc.nama||'-',pk,pb});
   });
   let summaryHtml='<h3 style="margin:16px 0 8px">REKAP SEKOLAH</h3>';
@@ -2333,9 +2382,9 @@ async function openOrlepAllocationDetail(iso){
  }catch(err){console.error(err);const content=document.getElementById('orlepAllocationContent');if(content)content.innerHTML='<p>Gagal memuat rincian alokasi ORLEP dari Firebase.</p>';}
 }
 
-async function refresh(){await repairPosyanduRecipientData();await repairTodayPMEffectiveDates();await fillSchoolFilters();await dashboard();if(document.getElementById("pmYearCalendar")&&document.getElementById("kalenderPM")?.classList.contains("active"))renderPMYearCalendar();if(document.getElementById('schools').classList.contains('active'))renderSchools();if(document.getElementById('students')?.classList.contains('active'))renderStudents();if(document.getElementById('teachers').classList.contains('active'))renderTeachers();if(document.getElementById('staff').classList.contains('active'))renderStaff();if(document.getElementById('posyandu').classList.contains('active')){renderPosyandu();renderPosyanduRecipients()}if(document.getElementById('rekap')?.classList.contains('active'))renderRekap();if(document.getElementById('riwayatPM')?.classList.contains('active'))renderPMHistory()}
+async function refresh(){await repairPosyanduRecipientData();await repairTodayPMEffectiveDates();await fillSchoolFilters();await dashboard();if(document.getElementById("pmYearCalendar")&&document.getElementById("kalenderPM")?.classList.contains("active"))renderPMYearCalendar();if(document.getElementById('schools').classList.contains('active'))renderSchools();if(document.getElementById('students')?.classList.contains('active'))renderStudents();if(document.getElementById('teachers').classList.contains('active'))renderTeachers();if(document.getElementById('staff').classList.contains('active'))renderStaff();if(document.getElementById('posyandu').classList.contains('active')){renderPosyandu();renderPosyanduRecipients()}if(document.getElementById('rekap')?.classList.contains('active'))renderRekap();if(document.getElementById('riwayatPM')?.classList.contains('active'))renderPMHistory();if(document.getElementById('penguranganPM')?.classList.contains('active'))renderSchoolHolidays()}
 
-setTimeout(()=>{setDefaultRekapDate();renderPMHistory()},0);
+setTimeout(()=>{setDefaultRekapDate();renderPMHistory();const hd=document.getElementById('holidayDateFrom'),he=document.getElementById('holidayDateTo');if(hd)hd.value=dayISO();if(he)he.value=dayISO()},0);
 
 function downloadStudentTemplate(){
  if(typeof XLSX==='undefined'){alert('Fitur Excel membutuhkan koneksi internet saat pertama kali digunakan.');return}
